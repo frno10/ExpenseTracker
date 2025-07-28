@@ -1,0 +1,55 @@
+# Core FastAPI dependencies
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+pydantic-settings==2.1.0
+
+# Database
+sqlalchemy==2.0.23
+alembic==1.13.1
+asyncpg==0.29.0
+
+# Supabase
+supabase==2.3.0
+postgrest==0.13.0
+
+# Development tools
+pytest==7.4.3
+pytest-asyncio==0.21.1
+httpx==0.24.1
+black==23.11.0
+mypy==1.7.1
+pre-commit==3.6.0
+
+# Additional utilities
+python-multipart==0.0.6
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+slowapi==0.1.9
+click==8.1.7
+rich==13.7.0
+email-validator==2.1.1
+
+# OpenTelemetry observability
+opentelemetry-api==1.21.0
+opentelemetry-sdk==1.21.0
+opentelemetry-instrumentation==0.42b0
+opentelemetry-instrumentation-fastapi==0.42b0
+opentelemetry-instrumentation-sqlalchemy==0.42b0
+opentelemetry-instrumentation-asyncpg==0.42b0
+opentelemetry-instrumentation-requests==0.42b0
+opentelemetry-exporter-jaeger-thrift==1.21.0
+opentelemetry-exporter-prometheus==1.12.0rc1
+opentelemetry-semantic-conventions==0.42b0
+prometheus-client==0.19.0
+requests==2.31.0
+
+# Statement parsing dependencies
+pandas==2.1.4
+PyPDF2==3.0.1
+pdfplumber==0.10.3
+openpyxl==3.1.2
+xlrd==2.0.1
+ofxparse==0.21
+python-magic==0.4.27
+chardet==5.2.0

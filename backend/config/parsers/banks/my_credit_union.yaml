@@ -1,0 +1,28 @@
+csv_config:
+  amount_columns:
+    negative_debits: true
+    single: true
+  date_formats:
+  - '%Y-%m-%d'
+  - '%m/%d/%Y'
+  field_mappings:
+    amount:
+    - Amount
+    - Transaction Amount
+    category:
+    - Category
+    date:
+    - Trans Date
+    - Date
+    description:
+    - Description
+    - Memo
+    reference:
+    - Reference
+    - Check Number
+name: My Credit Union
+pdf_config:
+  date_formats:
+  - '%Y-%m-%d'
+  transaction_patterns:
+  - (\d{4}-\d{2}-\d{2})\s+(.+?)\s+(\$?\s*-?\d+\.\d{2})

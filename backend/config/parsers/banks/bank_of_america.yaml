@@ -1,0 +1,16 @@
+csv_config:
+  amount_columns:
+    negative_debits: true
+    single: true
+  date_formats:
+  - '%m/%d/%Y'
+  field_mappings:
+    amount:
+    - Amount
+    date:
+    - Date
+    description:
+    - Description
+    reference:
+    - Reference Number
+name: Bank of America

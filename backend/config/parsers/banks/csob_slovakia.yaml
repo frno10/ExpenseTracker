@@ -1,0 +1,40 @@
+name: ČSOB Slovakia
+csv_config:
+  field_mappings:
+    date: ["Dátum", "Date"]
+    description: ["Popis transakcie", "Description"]
+    amount: ["Suma", "Amount"]
+  date_formats: ["%d. %m.", "%d.%m.%Y"]
+  amount_columns:
+    single: true
+    negative_debits: true
+pdf_config:
+  transaction_patterns:
+    # Main pattern: Date + Description + Amount (with merchant extraction)
+    - '(\d{1,2}\.\s*\d{1,2}\.)\s+(.*?)\s+(-?\d+[,.]?\d*)\s*$'
+    # Pattern for lines with merchant info: "Miesto: MERCHANT_NAME"
+    - 'Miesto:\s+(.+?)(?:\s|$)'
+    # Pattern for amount lines: "Suma: 12.9 EUR 30.04.2025"
+    - 'Suma:\s*(\d+[,.]\d*)\s+EUR\s+(\d{2}\.\d{2}\.\d{4})'
+  date_formats: ["%d. %m.", "%d.%m.%Y", "%d.%m.%y"]
+  amount_patterns:
+    - '(-?\d+[,.]?\d*)\s*EUR'
+    - '(-?\d+[,.]?\d*)'
+  # Custom settings for ČSOB
+  custom_processing:
+    # Fix year for dates that only have day.month format
+    default_year: 2025
+    # Convert amounts from format 12.90 to proper decimal
+    decimal_separator: "."
+    # Extract merchant from "Miesto:" lines
+    extract_merchant_from_location: true
+  ignore_patterns:
+    - '^\s*VÝPIS Z ÚČTU'
+    - '^\s*ACCOUNT STATEMENT'
+    - '^\s*Obdobie:'
+    - '^\s*Účet číslo:'
+    - '^\s*Strana:'
+    - '^\s*Prevádza sa:'
+    - '^\s*Ref\. platiteľa:'
+    - '^\s*Protihodnota:'
+    - '^\s*Kurz:'

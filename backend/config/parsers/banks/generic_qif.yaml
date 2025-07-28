@@ -1,0 +1,54 @@
+name: Generic QIF
+description: Generic configuration for QIF-based bank statements
+
+qif_config:
+  encoding: "utf-8"
+  fallback_encodings: ["latin-1", "cp1252", "iso-8859-1"]
+  
+  date_formats:
+    - "%m/%d/%Y"
+    - "%m/%d/%y"
+    - "%m-%d-%Y"
+    - "%m-%d-%y"
+    - "%d/%m/%Y"
+    - "%d/%m/%y"
+    - "%d-%m-%Y"
+    - "%d-%m-%y"
+    - "%Y-%m-%d"
+    - "%Y/%m/%d"
+  
+  field_codes:
+    D: "date"
+    T: "amount"
+    U: "amount_alt"
+    P: "payee"
+    M: "memo"
+    C: "cleared"
+    N: "number"
+    L: "category"
+    S: "split_category"
+    E: "split_memo"
+    "$": "split_amount"
+    A: "address"
+    "^": "end_transaction"
+  
+  account_types:
+    "!Type:Bank": "bank"
+    "!Type:Cash": "cash"
+    "!Type:CCard": "credit_card"
+    "!Type:Invst": "investment"
+    "!Type:Oth A": "other_asset"
+    "!Type:Oth L": "other_liability"
+  
+  cleared_status:
+    c: "cleared"
+    C: "cleared"
+    R: "reconciled"
+    r: "reconciled"
+    "*": "cleared"
+    X: "reconciled"
+    x: "reconciled"
+  
+  data_validation:
+    skip_empty_transactions: true
+    required_fields: ["date", "amount"]

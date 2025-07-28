@@ -1,0 +1,20 @@
+bank_configs: {}
+csv_settings:
+  date_formats:
+  - '%Y-%m-%d'
+  - '%m/%d/%Y'
+  - '%d/%m/%Y'
+  delimiter: ','
+  encoding: utf-8
+  skip_rows: 1
+default_encoding: utf-8
+enabled_parsers:
+- csv_parser
+- pdf_parser
+max_file_size_mb: 100
+pdf_settings:
+  extraction_method: pdfplumber
+  table_extraction:
+    enabled: true
+    min_columns: 3
+temp_directory: /tmp/expense_tracker_parsing

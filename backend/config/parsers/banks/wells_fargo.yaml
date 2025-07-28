@@ -1,0 +1,16 @@
+csv_config:
+  amount_columns:
+    credit_column: Credit
+    debit_column: Debit
+    negative_debits: true
+    single: false
+  date_formats:
+  - '%m/%d/%Y'
+  field_mappings:
+    amount:
+    - Amount
+    date:
+    - Date
+    description:
+    - Description
+name: Wells Fargo

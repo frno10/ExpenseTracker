@@ -1,0 +1,31 @@
+name: Generic Excel
+description: Generic configuration for Excel-based bank statements
+
+excel_config:
+  sheet_name: 0  # First sheet
+  header_row: 0
+  skip_rows: 0
+  
+  field_mappings:
+    date: ["Date", "Transaction Date", "Posting Date", "DATE"]
+    description: ["Description", "Memo", "Details", "DESCRIPTION"]
+    amount: ["Amount", "Transaction Amount", "AMOUNT"]
+    merchant: ["Payee", "Merchant", "Vendor", "PAYEE"]
+    category: ["Category", "Type", "CATEGORY"]
+    reference: ["Reference", "Check Number", "Ref", "REFERENCE"]
+  
+  amount_columns:
+    single: true
+    negative_debits: true
+  
+  date_formats:
+    - "%Y-%m-%d"
+    - "%m/%d/%Y"
+    - "%d/%m/%Y"
+    - "%m-%d-%Y"
+    - "%d-%m-%Y"
+
+  data_validation:
+    skip_empty_rows: true
+    skip_total_rows: true
+    required_fields: ["date", "amount"]

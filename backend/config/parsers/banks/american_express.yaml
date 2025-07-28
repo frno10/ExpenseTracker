@@ -1,0 +1,16 @@
+csv_config:
+  amount_columns:
+    negative_debits: false
+    single: true
+  date_formats:
+  - '%m/%d/%Y'
+  field_mappings:
+    amount:
+    - Amount
+    category:
+    - Category
+    date:
+    - Date
+    description:
+    - Description
+name: American Express
