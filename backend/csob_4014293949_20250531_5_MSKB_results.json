@@ -1,0 +1,1306 @@
+{
+  "bank": "ČSOB Slovakia",
+  "success": true,
+  "transaction_count": 80,
+  "total_amount": -151811.0,
+  "currency": "EUR",
+  "errors": [],
+  "warnings": [],
+  "metadata": {
+    "file_info": {
+      "path": "C:\\Dev\\BankStatementParsing\\AccountData\\4014293949_20250531_5_MSKB.pdf",
+      "name": "4014293949_20250531_5_MSKB.pdf",
+      "extension": ".pdf",
+      "size": 40641,
+      "modified": 1751185424.6966863,
+      "mime_type": "application/pdf",
+      "encoding": null,
+      "is_text": false,
+      "is_binary": true
+    },
+    "text_length": 20463,
+    "extraction_method": "text_patterns"
+  },
+  "transactions": [
+    {
+      "date": "1900-05-02",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -1290.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 21,
+        "raw_line": "2. 5. Čerpanie úveru plat.kartou -12,90",
+        "pattern_match": [
+          "2. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-12,90"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-04",
+      "description": "Splatka istiny Ing. Michal Lukac",
+      "amount": 1.0,
+      "merchant": "Splatka istiny Ing. Michal Lukac",
+      "category": null,
+      "raw_data": {
+        "line_number": 25,
+        "raw_line": "4. 5. Splatka istiny Ing. Michal Lukac 1 300,54",
+        "pattern_match": [
+          "4. 5.",
+          "Splatka istiny Ing. Michal Lukac",
+          "1"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-05",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -529.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 28,
+        "raw_line": "5. 5. Čerpanie úveru plat.kartou -5,29",
+        "pattern_match": [
+          "5. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-5,29"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-05",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -1149.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 32,
+        "raw_line": "5. 5. Čerpanie úveru plat.kartou -11,49",
+        "pattern_match": [
+          "5. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-11,49"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-05",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -115.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 36,
+        "raw_line": "5. 5. Čerpanie úveru plat.kartou -1,15",
+        "pattern_match": [
+          "5. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-1,15"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-05",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -1990.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 46,
+        "raw_line": "5. 5. Čerpanie úveru plat.kartou -19,90",
+        "pattern_match": [
+          "5. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-19,90"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-05",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -4463.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 50,
+        "raw_line": "5. 5. Čerpanie úveru plat.kartou -44,63",
+        "pattern_match": [
+          "5. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-44,63"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-05",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -319.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 54,
+        "raw_line": "5. 5. Čerpanie úveru plat.kartou -3,19",
+        "pattern_match": [
+          "5. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-3,19"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-06",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -770.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 58,
+        "raw_line": "6. 5. Čerpanie úveru plat.kartou -7,70",
+        "pattern_match": [
+          "6. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-7,70"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-06",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -4798.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 62,
+        "raw_line": "6. 5. Čerpanie úveru plat.kartou -47,98",
+        "pattern_match": [
+          "6. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-47,98"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-06",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -500.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 66,
+        "raw_line": "6. 5. Čerpanie úveru plat.kartou -5,00",
+        "pattern_match": [
+          "6. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-5,00"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-07",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -1903.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 70,
+        "raw_line": "7. 5. Čerpanie úveru plat.kartou -19,03",
+        "pattern_match": [
+          "7. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-19,03"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-09",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -373.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 74,
+        "raw_line": "9. 5. Čerpanie úveru plat.kartou -3,73",
+        "pattern_match": [
+          "9. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-3,73"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-09",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -760.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 78,
+        "raw_line": "9. 5. Čerpanie úveru plat.kartou -7,60",
+        "pattern_match": [
+          "9. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-7,60"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-09",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -1015.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 88,
+        "raw_line": "9. 5. Čerpanie úveru plat.kartou -10,15",
+        "pattern_match": [
+          "9. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-10,15"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-09",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -1000.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 92,
+        "raw_line": "9. 5. Čerpanie úveru plat.kartou -10,00",
+        "pattern_match": [
+          "9. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-10,00"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-09",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -3285.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 96,
+        "raw_line": "9. 5. Čerpanie úveru plat.kartou -32,85",
+        "pattern_match": [
+          "9. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-32,85"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-09",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -1017.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 100,
+        "raw_line": "9. 5. Čerpanie úveru plat.kartou -10,17",
+        "pattern_match": [
+          "9. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-10,17"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-09",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -5046.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 104,
+        "raw_line": "9. 5. Čerpanie úveru plat.kartou -50,46",
+        "pattern_match": [
+          "9. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-50,46"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-09",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -999.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 108,
+        "raw_line": "9. 5. Čerpanie úveru plat.kartou -9,99",
+        "pattern_match": [
+          "9. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-9,99"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-12",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -1017.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 112,
+        "raw_line": "12. 5. Čerpanie úveru plat.kartou -10,17",
+        "pattern_match": [
+          "12. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-10,17"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-12",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -3073.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 116,
+        "raw_line": "12. 5. Čerpanie úveru plat.kartou -30,73",
+        "pattern_match": [
+          "12. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-30,73"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-12",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -7683.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 120,
+        "raw_line": "12. 5. Čerpanie úveru plat.kartou -76,83",
+        "pattern_match": [
+          "12. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-76,83"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-12",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -1800.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 130,
+        "raw_line": "12. 5. Čerpanie úveru plat.kartou -18,00",
+        "pattern_match": [
+          "12. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-18,00"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-12",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -8606.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 134,
+        "raw_line": "12. 5. Čerpanie úveru plat.kartou -86,06",
+        "pattern_match": [
+          "12. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-86,06"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-12",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -1445.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 138,
+        "raw_line": "12. 5. Čerpanie úveru plat.kartou -14,45",
+        "pattern_match": [
+          "12. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-14,45"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-13",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -1756.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 142,
+        "raw_line": "13. 5. Čerpanie úveru plat.kartou -17,56",
+        "pattern_match": [
+          "13. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-17,56"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-13",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -1240.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 146,
+        "raw_line": "13. 5. Čerpanie úveru plat.kartou -12,40",
+        "pattern_match": [
+          "13. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-12,40"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-16",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -2081.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 150,
+        "raw_line": "16. 5. Čerpanie úveru plat.kartou -20,81",
+        "pattern_match": [
+          "16. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-20,81"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-19",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -3386.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 154,
+        "raw_line": "19. 5. Čerpanie úveru plat.kartou -33,86",
+        "pattern_match": [
+          "19. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-33,86"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-19",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -845.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 158,
+        "raw_line": "19. 5. Čerpanie úveru plat.kartou -8,45",
+        "pattern_match": [
+          "19. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-8,45"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-19",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -5879.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 162,
+        "raw_line": "19. 5. Čerpanie úveru plat.kartou -58,79",
+        "pattern_match": [
+          "19. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-58,79"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-19",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -2693.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 172,
+        "raw_line": "19. 5. Čerpanie úveru plat.kartou -26,93",
+        "pattern_match": [
+          "19. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-26,93"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-19",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -367.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 176,
+        "raw_line": "19. 5. Čerpanie úveru plat.kartou -3,67",
+        "pattern_match": [
+          "19. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-3,67"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-19",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -3256.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 180,
+        "raw_line": "19. 5. Čerpanie úveru plat.kartou -32,56",
+        "pattern_match": [
+          "19. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-32,56"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-19",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -1551.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 184,
+        "raw_line": "19. 5. Čerpanie úveru plat.kartou -15,51",
+        "pattern_match": [
+          "19. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-15,51"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-19",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -3975.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 188,
+        "raw_line": "19. 5. Čerpanie úveru plat.kartou -39,75",
+        "pattern_match": [
+          "19. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-39,75"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-19",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -612.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 192,
+        "raw_line": "19. 5. Čerpanie úveru plat.kartou -6,12",
+        "pattern_match": [
+          "19. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-6,12"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-19",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -408.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 196,
+        "raw_line": "19. 5. Čerpanie úveru plat.kartou -4,08",
+        "pattern_match": [
+          "19. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-4,08"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-19",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -1624.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 200,
+        "raw_line": "19. 5. Čerpanie úveru plat.kartou -16,24",
+        "pattern_match": [
+          "19. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-16,24"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-19",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -3222.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 204,
+        "raw_line": "19. 5. Čerpanie úveru plat.kartou -32,22",
+        "pattern_match": [
+          "19. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-32,22"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-19",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -510.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 214,
+        "raw_line": "19. 5. Čerpanie úveru plat.kartou -5,10",
+        "pattern_match": [
+          "19. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-5,10"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-19",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -816.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 218,
+        "raw_line": "19. 5. Čerpanie úveru plat.kartou -8,16",
+        "pattern_match": [
+          "19. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-8,16"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-19",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -241.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 222,
+        "raw_line": "19. 5. Čerpanie úveru plat.kartou -2,41",
+        "pattern_match": [
+          "19. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-2,41"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-20",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -82.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 226,
+        "raw_line": "20. 5. Čerpanie úveru plat.kartou -0,82",
+        "pattern_match": [
+          "20. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-0,82"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-20",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -310.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 230,
+        "raw_line": "20. 5. Čerpanie úveru plat.kartou -3,10",
+        "pattern_match": [
+          "20. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-3,10"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-20",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -832.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 234,
+        "raw_line": "20. 5. Čerpanie úveru plat.kartou -8,32",
+        "pattern_match": [
+          "20. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-8,32"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-20",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -498.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 238,
+        "raw_line": "20. 5. Čerpanie úveru plat.kartou -4,98",
+        "pattern_match": [
+          "20. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-4,98"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-20",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -959.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 242,
+        "raw_line": "20. 5. Čerpanie úveru plat.kartou -9,59",
+        "pattern_match": [
+          "20. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-9,59"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-20",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -82.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 246,
+        "raw_line": "20. 5. Čerpanie úveru plat.kartou -0,82",
+        "pattern_match": [
+          "20. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-0,82"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-20",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -2847.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 256,
+        "raw_line": "20. 5. Čerpanie úveru plat.kartou -28,47",
+        "pattern_match": [
+          "20. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-28,47"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-20",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -600.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 260,
+        "raw_line": "20. 5. Čerpanie úveru plat.kartou -6,00",
+        "pattern_match": [
+          "20. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-6,00"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-20",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -1224.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 264,
+        "raw_line": "20. 5. Čerpanie úveru plat.kartou -12,24",
+        "pattern_match": [
+          "20. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-12,24"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-20",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -3672.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 268,
+        "raw_line": "20. 5. Čerpanie úveru plat.kartou -36,72",
+        "pattern_match": [
+          "20. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-36,72"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-21",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -6041.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 272,
+        "raw_line": "21. 5. Čerpanie úveru plat.kartou -60,41",
+        "pattern_match": [
+          "21. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-60,41"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-23",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -2208.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 276,
+        "raw_line": "23. 5. Čerpanie úveru plat.kartou -22,08",
+        "pattern_match": [
+          "23. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-22,08"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-23",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -2693.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 280,
+        "raw_line": "23. 5. Čerpanie úveru plat.kartou -26,93",
+        "pattern_match": [
+          "23. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-26,93"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-23",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -1145.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 284,
+        "raw_line": "23. 5. Čerpanie úveru plat.kartou -11,45",
+        "pattern_match": [
+          "23. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-11,45"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-23",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -365.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 288,
+        "raw_line": "23. 5. Čerpanie úveru plat.kartou -3,65",
+        "pattern_match": [
+          "23. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-3,65"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-23",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -1596.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 298,
+        "raw_line": "23. 5. Čerpanie úveru plat.kartou -15,96",
+        "pattern_match": [
+          "23. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-15,96"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-26",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -3305.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 302,
+        "raw_line": "26. 5. Čerpanie úveru plat.kartou -33,05",
+        "pattern_match": [
+          "26. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-33,05"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-26",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -11780.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 306,
+        "raw_line": "26. 5. Čerpanie úveru plat.kartou -117,80",
+        "pattern_match": [
+          "26. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-117,80"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-26",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -1150.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 310,
+        "raw_line": "26. 5. Čerpanie úveru plat.kartou -11,50",
+        "pattern_match": [
+          "26. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-11,50"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-26",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -1797.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 314,
+        "raw_line": "26. 5. Čerpanie úveru plat.kartou -17,97",
+        "pattern_match": [
+          "26. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-17,97"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-26",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -2300.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 318,
+        "raw_line": "26. 5. Čerpanie úveru plat.kartou -23,00",
+        "pattern_match": [
+          "26. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-23,00"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-26",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -225.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 322,
+        "raw_line": "26. 5. Čerpanie úveru plat.kartou -2,25",
+        "pattern_match": [
+          "26. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-2,25"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-26",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -1795.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 326,
+        "raw_line": "26. 5. Čerpanie úveru plat.kartou -17,95",
+        "pattern_match": [
+          "26. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-17,95"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-26",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -2725.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 330,
+        "raw_line": "26. 5. Čerpanie úveru plat.kartou -27,25",
+        "pattern_match": [
+          "26. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-27,25"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-26",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -2578.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 340,
+        "raw_line": "26. 5. Čerpanie úveru plat.kartou -25,78",
+        "pattern_match": [
+          "26. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-25,78"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-27",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -300.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 344,
+        "raw_line": "27. 5. Čerpanie úveru plat.kartou -3,00",
+        "pattern_match": [
+          "27. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-3,00"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-27",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -440.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 348,
+        "raw_line": "27. 5. Čerpanie úveru plat.kartou -4,40",
+        "pattern_match": [
+          "27. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-4,40"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-28",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -360.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 352,
+        "raw_line": "28. 5. Čerpanie úveru plat.kartou -3,60",
+        "pattern_match": [
+          "28. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-3,60"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-28",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -1587.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 356,
+        "raw_line": "28. 5. Čerpanie úveru plat.kartou -15,87",
+        "pattern_match": [
+          "28. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-15,87"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-29",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -575.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 360,
+        "raw_line": "29. 5. Čerpanie úveru plat.kartou -5,75",
+        "pattern_match": [
+          "29. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-5,75"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-29",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -450.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 364,
+        "raw_line": "29. 5. Čerpanie úveru plat.kartou -4,50",
+        "pattern_match": [
+          "29. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-4,50"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-29",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -824.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 368,
+        "raw_line": "29. 5. Čerpanie úveru plat.kartou -8,24",
+        "pattern_match": [
+          "29. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-8,24"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-30",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -2719.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 372,
+        "raw_line": "30. 5. Čerpanie úveru plat.kartou -27,19",
+        "pattern_match": [
+          "30. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-27,19"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-30",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -746.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 382,
+        "raw_line": "30. 5. Čerpanie úveru plat.kartou -7,46",
+        "pattern_match": [
+          "30. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-7,46"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-30",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -960.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 386,
+        "raw_line": "30. 5. Čerpanie úveru plat.kartou -9,60",
+        "pattern_match": [
+          "30. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-9,60"
+        ]
+      }
+    },
+    {
+      "date": "1900-05-30",
+      "description": "Čerpanie úveru plat.kartou",
+      "amount": -635.0,
+      "merchant": "Čerpanie úveru plat.kartou",
+      "category": null,
+      "raw_data": {
+        "line_number": 390,
+        "raw_line": "30. 5. Čerpanie úveru plat.kartou -6,35",
+        "pattern_match": [
+          "30. 5.",
+          "Čerpanie úveru plat.kartou",
+          "-6,35"
+        ]
+      }
+    }
+  ]
+}

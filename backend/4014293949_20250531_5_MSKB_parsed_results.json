@@ -1,0 +1,24 @@
+{
+  "success": false,
+  "transaction_count": 0,
+  "errors": [],
+  "warnings": [
+    "No transactions found in PDF"
+  ],
+  "metadata": {
+    "file_info": {
+      "path": "C:\\Dev\\BankStatementParsing\\AccountData\\4014293949_20250531_5_MSKB.pdf",
+      "name": "4014293949_20250531_5_MSKB.pdf",
+      "extension": ".pdf",
+      "size": 40641,
+      "modified": 1751185424.6966863,
+      "mime_type": "application/pdf",
+      "encoding": null,
+      "is_text": false,
+      "is_binary": true
+    },
+    "text_length": 20463,
+    "extraction_method": "text_patterns"
+  },
+  "transactions": []
+}

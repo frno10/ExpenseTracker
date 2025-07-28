@@ -12,6 +12,7 @@ from app.api.categories import router as categories_router
 from app.api.expenses import router as expenses_router
 from app.api.merchants import router as merchants_router
 from app.api.payment_methods import router as payment_methods_router
+from app.api.statement_import import router as statement_import_router
 from app.core.config import settings
 from app.core.database import close_db, init_db
 from app.core.logging_config import setup_logging
@@ -98,6 +99,7 @@ app.include_router(categories_router, prefix="/api")
 app.include_router(expenses_router, prefix="/api")
 app.include_router(merchants_router, prefix="/api")
 app.include_router(payment_methods_router, prefix="/api")
+app.include_router(statement_import_router)
 
 @app.get("/")
 async def root():

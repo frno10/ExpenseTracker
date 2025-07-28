@@ -296,6 +296,63 @@ class ExpenseRepository(BaseRepository[ExpenseTable, ExpenseCreate, ExpenseUpdat
         
         result = await db.execute(query)
         return result.scalars().all()
+    
+    async def find_similar(
+        self,
+        db: AsyncSession,
+        start_date: date,
+        end_date: date,
+        min_amount: Decimal,
+        max_amount: Decimal,
+        description_keywords: Optional[List[str]] = None
+    ) -> List[ExpenseTable]:
+        """
+        Find similar expenses for duplicate detection.
+        
+        Args:
+            db: Database session
+            start_date: Start date for search range
+            end_date: End date for search range
+            min_amount: Minimum amount
+            max_amount: Maximum amount
+            description_keywords: Keywords to search in description
+            
+        Returns:
+            List of similar expenses
+        """
+        query = (
+            select(self.model)
+            .where(
+                and_(
+                    self.model.expense_date >= start_date,
+                    self.model.expense_date <= end_date,
+                    self.model.amount >= min_amount,
+                    self.model.amount <= max_amount
+                )
+            )
+            .options(
+                selectinload(self.model.category),
+                selectinload(self.model.payment_method)
+            )
+        )
+        
+        # Add description keyword filtering if provided
+        if description_keywords:
+            # Create OR conditions for each keyword
+            keyword_conditions = []
+            for keyword in description_keywords:
+                keyword_conditions.append(
+                    self.model.description.ilike(f"%{keyword}%")
+                )
+            
+            if keyword_conditions:
+                query = query.where(or_(*keyword_conditions))
+        
+        # Limit results to prevent excessive matches
+        query = query.limit(50).order_by(desc(self.model.expense_date))
+        
+        result = await db.execute(query)
+        return result.scalars().all()
 
 
 # Create repository instance

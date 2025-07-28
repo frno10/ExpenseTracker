@@ -1,0 +1,121 @@
+--- Page 1 ---
+VÝPIS Z ÚČTU | ACCOUNT STATEMENT
+Obdobie: 1. 5. 2025 - 31. 5. 2025
+Účet číslo: 4014293949/7500
+Názov účtu: MICHAL LUKÁČ
+BIC: CEKOSKBX
+IBAN: SK85 7500 0000 0040 1429 3949
+Ing. Michal Lukáč
+Typ účtu: ČSOB Kreditná karta
+Kuzmányho 1885/13
+Mena účtu: EUR
+04001 Košice-Staré Mesto
+Frekvencia: mesačná
+Pobočka: Košice - Aupark
+Nám. Osloboditeľov 3377/1, Aupark SC,
+PSČ 04001, 0850 111 777
+Kontaktná osoba: Dana Borošová, +421 556 112 372
+Rok/č. výpisu: 2025/5
+Strana: 1/10
+Začiatočná úroková sadzba: 19,50 % p. a. Konečná úroková sadzba: 19,50 % p. a.
+Počet debetných položiek: 79 Počet kreditných položiek: 1
+Debetný obrat: 1 518,12 Kreditný obrat: 1 300,54
+Začiatočný stav istiny: -1 300,54 Konečný stav istiny: -1 518,12
+Dátum Popis transakcie Suma
+2. 5. Čerpanie úveru plat.kartou -12,90
+Ref. platiteľa: /VS205000121/SS3600268562/KS6178 Protihodnota: 12,90 EUR
+Miesto: SUPERMARKET FRESH KOSICE
+Suma: 12.9 EUR 30.04.2025 Kurz:
+4. 5. Splatka istiny Ing. Michal Lukac 1 300,54
+SK5875000000004003854907 CEKOSKBX
+Lubovolna splatka kreditnej karty
+5. 5. Čerpanie úveru plat.kartou -5,29
+Ref. platiteľa: /VS205000122/SS3600268562/KS6178 Protihodnota: 5,29 EUR
+Miesto: OMV 2321 Snina
+Suma: 5.29 EUR 01.05.2025 Kurz:
+5. 5. Čerpanie úveru plat.kartou -11,49
+Ref. platiteľa: /VS205000122/SS3600268562/KS6178 Protihodnota: 11,49 EUR
+Miesto: Netflix.com Los Gatos
+Suma: 11.49 EUR 02.05.2025 Kurz:
+5. 5. Čerpanie úveru plat.kartou -1,15
+Ref. platiteľa: /VS205000123/SS3600268562/KS6178 Protihodnota: 4,83 PLN Kurz: 4,2
+Miesto: ELSPAW & SRUBTEX-POL s Sanok
+Suma: 4.83 PLN 02.05.2025 Kurz: 4,2
+Prevádza sa: -30,83 EUR
+Československá obchodná banka, a. s., Žižkova 11, 811 02 Bratislava, IČO: 36 854 140, zapísaná v Obchodnom registri Mestského súdu Bratislava III, oddiel Sa, vložka
+č. 4314/B, www.csob.sk; info@csob.sk; +421 259 66 88 44
+
+--- Page 2 ---
+VÝPIS Z ÚČTU | ACCOUNT STATEMENT
+Obdobie: 1. 5. 2025 - 31. 5. 2025 Rok/č. výpisu: 2025/5
+Účet číslo: 4014293949/7500 Strana: 2/10
+Názov účtu: MICHAL LUKÁČ
+Prevedené: -30,83 EUR
+Dátum Popis transakcie Suma
+5. 5. Čerpanie úveru plat.kartou -19,90
+Ref. platiteľa: /VS205000124/SS3600268562/KS6178 Protihodnota: 19,90 EUR
+Miesto: The Beer House Kosice
+Suma: 19.9 EUR 03.05.2025 Kurz:
+5. 5. Čerpanie úveru plat.kartou -44,63
+Ref. platiteľa: /VS205000124/SS3600268562/KS6178 Protihodnota: 44,63 EUR
+Miesto: KAUFLAND 1520,KE Popra KOSICE
+Suma: 44.63 EUR 03.05.2025 Kurz:
+5. 5. Čerpanie úveru plat.kartou -3,19
+Ref. platiteľa: /VS205000124/SS3600268562/KS6178 Protihodnota: 3,19 EUR
+Miesto: OMV 2321 Snina
+Suma: 3.19 EUR 03.05.2025 Kurz:
+6. 5. Čerpanie úveru plat.kartou -7,70
+Ref. platiteľa: /VS205000125/SS3600268562/KS6178 Protihodnota: 7,70 EUR
+Miesto: Kaviaren od srdca Kosice
+Suma: 7.7 EUR 04.05.2025 Kurz:
+6. 5. Čerpanie úveru plat.kartou -47,98
+Ref. platiteľa: /VS205000125/SS3600268562/KS6178 Protihodnota: 47,98 EUR
+Miesto: KAUFLAND 2420,KE,TORYS KOSICE
+Suma: 47.98 EUR 04.05.2025 Kurz:
+6. 5. Čerpanie úveru plat.kartou -5,00
+Ref. platiteľa: /VS205000125/SS3600268562/KS6178 Protihodnota: 5,00 EUR
+Miesto: GECO TABAK, KE, GALERI KOSCICE
+Suma: 5 EUR 04.05.2025 Kurz:
+7. 5. Čerpanie úveru plat.kartou -19,03
+Ref. platiteľa: /VS205000127/SS3600268562/KS6178 Protihodnota: 19,03 EUR
+Miesto: LIDL SLOVENSKO 277 Kosice
+Suma: 19.03 EUR 06.05.2025 Kurz:
+9. 5. Čerpanie úveru plat.kartou -3,73
+Ref. platiteľa: /VS205000127/SS3600268562/KS6178 Protihodnota: 3,73 EUR
+Miesto: VINTED, UAB Vilnius
+Suma: 3.73 EUR 06.05.2025 Kurz:
+9. 5. Čerpanie úveru plat.kartou -7,60
+Ref. platiteľa: /VS205000127/SS3600268562/KS6178 Protihodnota: 7,60 EUR
+Miesto: H&B SLOVAKIA S.R.O. KOSICE
+Suma: 7.6 EUR 06.05.2025 Kurz:
+Prevádza sa: -189,59 EUR
+Československá obchodná banka, a. s., Žižkova 11, 811 02 Bratislava, IČO: 36 854 140, zapísaná v Obchodnom registri Mestského súdu Bratislava III, oddiel Sa, vložka
+č. 4314/B, www.csob.sk; info@csob.sk; +421 259 66 88 44
+
+--- Page 3 ---
+VÝPIS Z ÚČTU | ACCOUNT STATEMENT
+Obdobie: 1. 5. 2025 - 31. 5. 2025 Rok/č. výpisu: 2025/5
+Účet číslo: 4014293949/7500 Strana: 3/10
+Názov účtu: MICHAL LUKÁČ
+Prevedené: -189,59 EUR
+Dátum Popis transakcie Suma
+9. 5. Čerpanie úveru plat.kartou -10,15
+Ref. platiteľa: /VS205000127/SS3600268562/KS6178 Protihodnota: 10,15 EUR
+Miesto: H&B SLOVAKIA S.R.O. KOSICE
+Suma: 10.15 EUR 06.05.2025 Kurz:
+9. 5. Čerpanie úveru plat.kartou -10,00
+Ref. platiteľa: /VS205000127/SS3600268562/KS6178 Protihodnota: 10,00 EUR
+Miesto: IKIGAI STEEL ARENA, KE Kosice
+Suma: 10 EUR 06.05.2025 Kurz:
+9. 5. Čerpanie úveru plat.kartou -32,85
+Ref. platiteľa: /VS205000128/SS3600268562/KS6178 Protihodnota: 32,85 EUR
+Miesto: Alza sk Karlova Ves Bratislava
+Suma: 32.85 EUR 07.05.2025 Kurz:
+9. 5. Čerpanie úveru plat.kartou -10,17
+Ref. platiteľa: /VS205000128/SS3600268562/KS6178 Protihodnota: 10,17 EUR
+Miesto: SUPERMARKET FRESH KOSICE
+Suma: 10.17 EUR 07.05.2025 Kurz:
+9. 5. Čerpanie úveru plat.kartou -50,46
+Ref. platiteľa: /VS205000128/SS3600268562/KS6178 Protihodnota: 50,46 EUR
+Miesto: KAUFLAND 2420,KE,TORYS KOSICE
+Suma: 5
