@@ -21,6 +21,7 @@ from app.api.export import router as export_router
 from app.api.statement_import import router as statement_import_router
 from app.api.analytics import router as analytics_router
 from app.api.advanced_analytics import router as advanced_analytics_router
+from app.api.websocket import router as websocket_router
 from app.core.config import settings
 from app.core.database import close_db, init_db
 from app.core.logging_config import setup_logging
@@ -76,10 +77,38 @@ async def lifespan(app: FastAPI):
         logger.error(f"Failed to start recurring expense scheduler: {e}")
         # Continue without scheduler
     
+    # Start WebSocket cleanup task
+    try:
+        import asyncio
+        from app.services.websocket_manager import websocket_manager
+        
+        async def websocket_cleanup_task():
+            while True:
+                try:
+                    await asyncio.sleep(300)  # Run every 5 minutes
+                    await websocket_manager.cleanup_stale_connections()
+                except Exception as e:
+                    logger.error(f"WebSocket cleanup task error: {e}")
+        
+        asyncio.create_task(websocket_cleanup_task())
+        logger.info("WebSocket cleanup task started")
+    except Exception as e:
+        logger.error(f"Failed to start WebSocket cleanup task: {e}")
+        # Continue without cleanup task
+    
     yield
     
     # Shutdown
     logger.info("Shutting down Expense Tracker API")
+    
+    # Cleanup WebSocket connections
+    try:
+        from app.services.websocket_manager import websocket_manager
+        await websocket_manager.cleanup_stale_connections(max_age_minutes=0)  # Close all connections
+        logger.info("WebSocket connections cleaned up")
+    except Exception as e:
+        logger.error(f"Failed to cleanup WebSocket connections: {e}")
+    
     await stop_recurring_expense_scheduler()
     await close_db()
 
@@ -129,6 +158,7 @@ app.include_router(export_router, prefix="/api")
 app.include_router(statement_import_router)
 app.include_router(analytics_router)
 app.include_router(advanced_analytics_router)
+app.include_router(websocket_router, prefix="/api")
 
 @app.get("/")
 async def root():

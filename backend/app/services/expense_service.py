@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.expense import ExpenseCreate, ExpenseTable, ExpenseUpdate
 from app.repositories.expense import expense_repository
 from app.services.budget_service import BudgetService
+from app.services.websocket_manager import notify_expense_created, notify_expense_updated, notify_expense_deleted
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +51,17 @@ class ExpenseService:
         
         # Update budget spending for this expense
         await self._update_budgets_for_expense(db, expense)
+        
+        # Send real-time notification
+        expense_dict = {
+            "id": str(expense.id),
+            "amount": float(expense.amount),
+            "description": expense.description,
+            "category": expense.category.name if expense.category else None,
+            "date": expense.date.isoformat(),
+            "created_at": expense.created_at.isoformat()
+        }
+        await notify_expense_created(str(user_id), expense_dict)
         
         logger.info(f"Created expense {expense.id} and updated budgets")
         return expense
@@ -96,6 +108,17 @@ class ExpenseService:
             # Recalculate budgets for the user
             await self.budget_service.recalculate_user_budgets(db, user_id)
         
+        # Send real-time notification
+        expense_dict = {
+            "id": str(updated_expense.id),
+            "amount": float(updated_expense.amount),
+            "description": updated_expense.description,
+            "category": updated_expense.category.name if updated_expense.category else None,
+            "date": updated_expense.date.isoformat(),
+            "updated_at": updated_expense.updated_at.isoformat()
+        }
+        await notify_expense_updated(str(user_id), expense_dict)
+        
         logger.info(f"Updated expense {expense_id} and recalculated budgets")
         return updated_expense
     
@@ -128,6 +151,10 @@ class ExpenseService:
         if success:
             # Recalculate budgets for the user
             await self.budget_service.recalculate_user_budgets(db, user_id)
+            
+            # Send real-time notification
+            await notify_expense_deleted(str(user_id), str(expense_id))
+            
             logger.info(f"Deleted expense {expense_id} and recalculated budgets")
         
         return success

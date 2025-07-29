@@ -62,6 +62,16 @@ async def init_db() -> None:
         logger.info("Database tables created successfully")
 
 
+def get_db_session():
+    """
+    Get a database session context manager for use outside of FastAPI dependencies.
+    
+    Returns:
+        AsyncSession context manager
+    """
+    return AsyncSessionLocal()
+
+
 async def close_db() -> None:
     """
     Close database connections.

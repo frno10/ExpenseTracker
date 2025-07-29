@@ -190,6 +190,48 @@ async def get_current_active_user(
     return current_user
 
 
+async def get_current_user_websocket(token: Optional[str]) -> Optional[UserTable]:
+    """
+    Get the current authenticated user from JWT token for WebSocket connections.
+    
+    Args:
+        token: JWT token from query parameter
+        
+    Returns:
+        Current user instance or None if authentication fails
+    """
+    if not token:
+        return None
+    
+    try:
+        # Verify token
+        payload = await verify_token(token)
+        user_id: str = payload.get("sub")
+        
+        if user_id is None:
+            return None
+            
+        # Convert to UUID
+        try:
+            user_uuid = UUID(user_id)
+        except ValueError:
+            return None
+        
+        # Get database session
+        from app.core.database import get_db_session
+        async with get_db_session() as db:
+            # Get user from database
+            user = await user_repository.get(db, user_uuid)
+            if user is None or not user.is_active:
+                return None
+            
+            return user
+            
+    except Exception as e:
+        logger.warning(f"WebSocket authentication failed: {e}")
+        return None
+
+
 class RequirePermissions:
     """
     Dependency class for checking user permissions.

@@ -23,6 +23,7 @@ from app.models.budget import (
 from app.models.expense import ExpenseTable
 from app.repositories.budget import budget_repository, category_budget_repository
 from app.repositories.expense import expense_repository
+from app.services.websocket_manager import notify_budget_alert, notify_budget_updated
 
 logger = logging.getLogger(__name__)
 
@@ -557,6 +558,17 @@ class BudgetService:
                 alerts = await self.check_budget_alerts(db, user_id, budget.id)
                 if alerts:
                     logger.info(f"Generated {len(alerts)} alerts for budget {budget.id}")
+                    
+                    # Send real-time notifications for each alert
+                    for alert in alerts:
+                        budget_dict = {
+                            "id": str(budget.id),
+                            "name": budget.name,
+                            "total_limit": float(budget.total_limit) if budget.total_limit else None,
+                            "spent_amount": float(alert.amount_spent),
+                            "percentage_used": alert.percentage_used
+                        }
+                        await notify_budget_alert(str(user_id), budget_dict, alert.alert_type)
                     
             except Exception as e:
                 logger.error(f"Failed to recalculate budget {budget.id}: {e}")

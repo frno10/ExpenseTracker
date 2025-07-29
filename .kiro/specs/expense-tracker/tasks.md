@@ -175,10 +175,14 @@
 
 
 
+
 - [ ] 17. Implement CLI application
   - Create CLI framework using Python Click with command groups
   - Build expense management commands with rich formatting for output
   - Implement statement import commands with progress bars using rich
+
+
+
   - Add reporting commands with table formatting and chart export
   - Create configuration file support using TOML/YAML for CLI preferences
   - Write CLI integration tests using Click's testing utilities
