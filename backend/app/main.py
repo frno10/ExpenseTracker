@@ -31,6 +31,14 @@ from app.core.security import (
     SecurityHeadersMiddleware,
     setup_rate_limiting,
 )
+from app.core.security_middleware import (
+    SecurityHeadersMiddleware as EnhancedSecurityHeadersMiddleware,
+    CSRFProtectionMiddleware,
+    RateLimitMiddleware,
+    InputValidationMiddleware,
+    SessionSecurityMiddleware,
+    AuditLoggingMiddleware
+)
 from app.core.telemetry import telemetry
 from app.services.recurring_expense_scheduler import (
     start_recurring_expense_scheduler, 
@@ -122,8 +130,15 @@ app = FastAPI(
     redoc_url="/redoc" if settings.debug else None,
 )
 
-# Security middleware (order matters!)
-app.add_middleware(SecurityHeadersMiddleware)
+# Enhanced security middleware (order matters - most specific first!)
+app.add_middleware(AuditLoggingMiddleware)
+app.add_middleware(SessionSecurityMiddleware, session_timeout=3600)
+app.add_middleware(InputValidationMiddleware, max_content_length=10 * 1024 * 1024)
+app.add_middleware(RateLimitMiddleware, requests_per_minute=60, burst_limit=10)
+app.add_middleware(CSRFProtectionMiddleware, secret_key=settings.secret_key)
+app.add_middleware(EnhancedSecurityHeadersMiddleware)
+
+# Existing middleware
 app.add_middleware(ObservabilityMiddleware)
 app.add_middleware(AuthenticationMiddleware)
 

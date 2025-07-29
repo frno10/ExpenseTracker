@@ -60,3 +60,7 @@ python-magic-bin==0.4.14  # Windows binary for python-magic
 clamd==1.0.2  # ClamAV daemon client for virus scanning
 filetype==1.2.0  # Additional file type detection
 Pillow>=10.4.0  # Image processing for receipt attachments
+
+# Security dependencies
+bleach==6.1.0  # HTML sanitization
+cryptography>=41.0.0  # Enhanced cryptography support

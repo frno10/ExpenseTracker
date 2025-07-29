@@ -188,7 +188,10 @@
   - Write CLI integration tests using Click's testing utilities
   - _Requirements: 8.3, 8.4_
 
-- [ ] 18. Add real-time features and WebSocket support
+- [x] 18. Add real-time features and WebSocket support
+
+
+
   - Implement WebSocket server for real-time updates
   - Add real-time expense updates across web interface
   - Create real-time budget alerts and notifications
