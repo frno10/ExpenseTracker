@@ -1,16 +1,29 @@
 import { render, screen } from '@testing-library/react'
-import { describe, it, expect } from 'vitest'
-import App from '../App'
+import { describe, it, expect, vi } from 'vitest'
+import { BrowserRouter } from 'react-router-dom'
+import { Login } from '../pages/Login'
 
-describe('App', () => {
-  it('renders the expense tracker title', () => {
-    render(<App />)
-    expect(screen.getByText('Expense Tracker')).toBeInTheDocument()
-  })
+// Mock the auth context
+vi.mock('../contexts/AuthContext', () => ({
+  useAuth: () => ({
+    user: null,
+    loading: false,
+    login: vi.fn(),
+    register: vi.fn(),
+    logout: vi.fn(),
+    isAuthenticated: false,
+  }),
+}))
 
-  it('renders the dashboard', () => {
-    render(<App />)
-    expect(screen.getByText('Dashboard')).toBeInTheDocument()
-    expect(screen.getByText('Welcome to your expense tracker dashboard')).toBeInTheDocument()
+describe('Login Page', () => {
+  it('renders login form', () => {
+    render(
+      <BrowserRouter>
+        <Login />
+      </BrowserRouter>
+    )
+    expect(screen.getByText('Sign in to your account')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('Enter your email')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('Enter your password')).toBeInTheDocument()
   })
 })

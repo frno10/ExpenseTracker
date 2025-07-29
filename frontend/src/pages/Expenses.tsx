@@ -13,6 +13,8 @@ import {
   ChevronDown,
   X
 } from 'lucide-react'
+import { apiClient } from '../lib/api'
+import { ExpenseForm } from '../components/ExpenseForm'
 
 interface Expense {
   id: string
@@ -41,6 +43,8 @@ export function Expenses() {
   const [loading, setLoading] = useState(true)
   const [showFilters, setShowFilters] = useState(false)
   const [selectedExpenses, setSelectedExpenses] = useState<string[]>([])
+  const [showExpenseForm, setShowExpenseForm] = useState(false)
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null)
   const [filters, setFilters] = useState<FilterState>({
     search: '',
     category: '',
@@ -69,21 +73,18 @@ export function Expenses() {
   const loadExpenses = async () => {
     try {
       setLoading(true)
-      const params = new URLSearchParams()
       
-      if (filters.search) params.append('search', filters.search)
-      if (filters.category) params.append('category', filters.category)
-      if (filters.account) params.append('account', filters.account)
-      if (filters.dateFrom) params.append('date_from', filters.dateFrom)
-      if (filters.dateTo) params.append('date_to', filters.dateTo)
-      if (filters.minAmount) params.append('min_amount', filters.minAmount)
-      if (filters.maxAmount) params.append('max_amount', filters.maxAmount)
+      const params: any = {}
+      if (filters.search) params.search = filters.search
+      if (filters.category) params.category = filters.category
+      if (filters.account) params.account = filters.account
+      if (filters.dateFrom) params.date_from = filters.dateFrom
+      if (filters.dateTo) params.date_to = filters.dateTo
+      if (filters.minAmount) params.min_amount = parseFloat(filters.minAmount)
+      if (filters.maxAmount) params.max_amount = parseFloat(filters.maxAmount)
 
-      const response = await fetch(`/api/expenses?${params}`)
-      if (response.ok) {
-        const data = await response.json()
-        setExpenses(data.expenses || [])
-      }
+      const data = await apiClient.getExpenses(params)
+      setExpenses(data.items || [])
     } catch (error) {
       console.error('Error loading expenses:', error)
     } finally {
@@ -93,20 +94,13 @@ export function Expenses() {
 
   const loadFilterOptions = async () => {
     try {
-      const [categoriesResponse, accountsResponse] = await Promise.all([
-        fetch('/api/categories'),
-        fetch('/api/accounts')
+      const [categoriesData, accountsData] = await Promise.all([
+        apiClient.getCategories().catch(() => []),
+        apiClient.getAccounts().catch(() => [])
       ])
       
-      if (categoriesResponse.ok) {
-        const categoriesData = await categoriesResponse.json()
-        setCategories(categoriesData.map((c: any) => c.name))
-      }
-      
-      if (accountsResponse.ok) {
-        const accountsData = await accountsResponse.json()
-        setAccounts(accountsData.map((a: any) => a.name))
-      }
+      setCategories(categoriesData.map((c: any) => c.name))
+      setAccounts(accountsData.map((a: any) => a.name))
     } catch (error) {
       console.error('Error loading filter options:', error)
     }
@@ -149,11 +143,7 @@ export function Expenses() {
     
     if (confirm(`Delete ${selectedExpenses.length} selected expenses?`)) {
       try {
-        await fetch('/api/expenses/bulk-delete', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ expense_ids: selectedExpenses })
-        })
+        await apiClient.bulkDeleteExpenses(selectedExpenses)
         setSelectedExpenses([])
         loadExpenses()
       } catch (error) {
@@ -164,27 +154,24 @@ export function Expenses() {
 
   const handleExport = async () => {
     try {
-      const params = new URLSearchParams()
-      if (filters.search) params.append('search', filters.search)
-      if (filters.category) params.append('category', filters.category)
-      if (filters.account) params.append('account', filters.account)
-      if (filters.dateFrom) params.append('date_from', filters.dateFrom)
-      if (filters.dateTo) params.append('date_to', filters.dateTo)
-      if (filters.minAmount) params.append('min_amount', filters.minAmount)
-      if (filters.maxAmount) params.append('max_amount', filters.maxAmount)
+      const params: any = { format: 'csv' }
+      if (filters.search) params.search = filters.search
+      if (filters.category) params.category = filters.category
+      if (filters.account) params.account = filters.account
+      if (filters.dateFrom) params.date_from = filters.dateFrom
+      if (filters.dateTo) params.date_to = filters.dateTo
+      if (filters.minAmount) params.min_amount = parseFloat(filters.minAmount)
+      if (filters.maxAmount) params.max_amount = parseFloat(filters.maxAmount)
 
-      const response = await fetch(`/api/expenses/export?${params}`)
-      if (response.ok) {
-        const blob = await response.blob()
-        const url = window.URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = `expenses-${new Date().toISOString().split('T')[0]}.csv`
-        document.body.appendChild(a)
-        a.click()
-        window.URL.revokeObjectURL(url)
-        document.body.removeChild(a)
-      }
+      const blob = await apiClient.exportExpenses(params)
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `expenses-${new Date().toISOString().split('T')[0]}.csv`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
     } catch (error) {
       console.error('Error exporting expenses:', error)
     }
@@ -198,6 +185,43 @@ export function Expenses() {
   }
 
   const hasActiveFilters = Object.values(filters).some(value => value !== '')
+
+  const handleAddExpense = () => {
+    setEditingExpense(null)
+    setShowExpenseForm(true)
+  }
+
+  const handleEditExpense = (expense: Expense) => {
+    setEditingExpense(expense)
+    setShowExpenseForm(true)
+  }
+
+  const handleDeleteExpense = async (expenseId: string) => {
+    if (confirm('Delete this expense?')) {
+      try {
+        await apiClient.deleteExpense(expenseId)
+        loadExpenses()
+      } catch (error) {
+        console.error('Error deleting expense:', error)
+      }
+    }
+  }
+
+  const handleSaveExpense = async (expenseData: any) => {
+    try {
+      if (editingExpense) {
+        await apiClient.updateExpense(editingExpense.id, expenseData)
+      } else {
+        await apiClient.createExpense(expenseData)
+      }
+      loadExpenses()
+      setShowExpenseForm(false)
+      setEditingExpense(null)
+    } catch (error) {
+      console.error('Error saving expense:', error)
+      throw error
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -217,7 +241,10 @@ export function Expenses() {
             <Download className="h-4 w-4 mr-2" />
             Export
           </button>
-          <button className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors">
+          <button 
+            onClick={handleAddExpense}
+            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+          >
             <Plus className="h-4 w-4 mr-2" />
             Add Expense
           </button>
@@ -430,10 +457,16 @@ export function Expenses() {
                     </td>
                     <td className="p-4 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <button className="p-1 hover:bg-muted rounded">
+                        <button 
+                          onClick={() => handleEditExpense(expense)}
+                          className="p-1 hover:bg-muted rounded"
+                        >
                           <Edit className="h-4 w-4" />
                         </button>
-                        <button className="p-1 hover:bg-muted rounded text-destructive">
+                        <button 
+                          onClick={() => handleDeleteExpense(expense.id)}
+                          className="p-1 hover:bg-muted rounded text-destructive"
+                        >
                           <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
@@ -454,7 +487,10 @@ export function Expenses() {
               }
             </p>
             {!hasActiveFilters && (
-              <button className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors">
+              <button 
+                onClick={handleAddExpense}
+                className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+              >
                 <Plus className="h-4 w-4 mr-2" />
                 Add Expense
               </button>
@@ -462,6 +498,17 @@ export function Expenses() {
           </div>
         )}
       </div>
+
+      {/* Expense Form Modal */}
+      <ExpenseForm
+        expense={editingExpense}
+        isOpen={showExpenseForm}
+        onClose={() => {
+          setShowExpenseForm(false)
+          setEditingExpense(null)
+        }}
+        onSave={handleSaveExpense}
+      />
     </div>
   )
 }

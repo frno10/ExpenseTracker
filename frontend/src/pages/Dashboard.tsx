@@ -14,6 +14,7 @@ import {
   PieChart,
   Bell
 } from 'lucide-react'
+import { apiClient } from '../lib/api'
 
 interface DashboardStats {
   totalExpenses: number
@@ -63,22 +64,18 @@ export function Dashboard() {
       setLoading(true)
       
       // Load dashboard statistics
-      const [statsResponse, expensesResponse, alertsResponse] = await Promise.all([
-        fetch('/api/analytics/dashboard-stats'),
-        fetch('/api/expenses?limit=5&sort=date_desc'),
-        fetch('/api/budgets/alerts')
+      const [statsData, expensesData, alertsData] = await Promise.all([
+        apiClient.getDashboardStats().catch(() => ({})),
+        apiClient.getExpenses({ size: 5 }).catch(() => ({ items: [] })),
+        apiClient.getBudgetAlerts().catch(() => [])
       ])
-      
-      const statsData = statsResponse.ok ? await statsResponse.json() : {}
-      const expensesData = expensesResponse.ok ? await expensesResponse.json() : []
-      const alertsData = alertsResponse.ok ? await alertsResponse.json() : []
       
       setStats({
         totalExpenses: statsData.total_expenses || 0,
         monthlySpending: statsData.monthly_spending || 0,
         categoriesCount: statsData.categories_count || 0,
         budgetUsage: statsData.budget_usage || 0,
-        recentExpenses: expensesData.expenses || [],
+        recentExpenses: expensesData.items || [],
         budgetAlerts: alertsData || [],
         monthlyTrend: statsData.monthly_trend || 0
       })

@@ -287,4 +287,16 @@ class APIClient:
     
     def create_account(self, account_data: Dict[str, Any]) -> Dict[str, Any]:
         """Create a new account."""
-        return self._make_request("POST", "/accounts", data=account_data)
+        return self._make_request("POST", "/accounts", data=account_data)    d
+ef get_recurring_expense(self, recurring_id: str) -> Dict[str, Any]:
+        """Get a specific recurring expense."""
+        return self._make_request("GET", f"/recurring-expenses/{recurring_id}")
+    
+    def get_upcoming_expenses(self) -> List[Dict[str, Any]]:
+        """Get upcoming recurring expenses."""
+        return self._make_request("GET", "/recurring-expenses/upcoming")
+    
+    # Statistics and Analytics
+    def get_expense_statistics(self, params: Optional[Dict] = None) -> Dict[str, Any]:
+        """Get expense statistics."""
+        return self._make_request("GET", "/expenses/statistics", params=params or {})

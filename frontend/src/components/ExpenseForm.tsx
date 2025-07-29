@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { X, Plus, Tag, Calendar, DollarSign, FileText, CreditCard } from 'lucide-react'
+import { apiClient } from '../lib/api'
 
 interface ExpenseFormProps {
   expense?: Expense | null
@@ -79,26 +80,15 @@ export function ExpenseForm({ expense, isOpen, onClose, onSave }: ExpenseFormPro
 
   const loadFormOptions = async () => {
     try {
-      const [categoriesResponse, accountsResponse, paymentMethodsResponse] = await Promise.all([
-        fetch('/api/categories'),
-        fetch('/api/accounts'),
-        fetch('/api/payment-methods')
+      const [categoriesData, accountsData, paymentMethodsData] = await Promise.all([
+        apiClient.getCategories().catch(() => []),
+        apiClient.getAccounts().catch(() => []),
+        apiClient.getPaymentMethods().catch(() => [])
       ])
       
-      if (categoriesResponse.ok) {
-        const categoriesData = await categoriesResponse.json()
-        setCategories(categoriesData.map((c: any) => c.name))
-      }
-      
-      if (accountsResponse.ok) {
-        const accountsData = await accountsResponse.json()
-        setAccounts(accountsData.map((a: any) => a.name))
-      }
-      
-      if (paymentMethodsResponse.ok) {
-        const paymentMethodsData = await paymentMethodsResponse.json()
-        setPaymentMethods(paymentMethodsData.map((p: any) => p.name))
-      }
+      setCategories(categoriesData.map((c: any) => c.name))
+      setAccounts(accountsData.map((a: any) => a.name))
+      setPaymentMethods(paymentMethodsData.map((p: any) => p.name))
     } catch (error) {
       console.error('Error loading form options:', error)
     }
