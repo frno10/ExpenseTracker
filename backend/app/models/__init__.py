@@ -47,11 +47,12 @@ from .merchant import (
     MerchantUpdate,
 )
 from .payment_method import (
-    PaymentMethodCreate,
-    PaymentMethodSchema,
-    PaymentMethodTable,
-    PaymentMethodUpdate,
-    PaymentType,
+    PaymentMethodTable, AccountTable, AccountBalanceHistory, AccountTransfer,
+    PaymentMethodType, AccountType
+)
+from .recurring_expense import (
+    RecurringExpenseTable, RecurringExpenseHistoryTable, RecurringExpenseNotificationTable,
+    RecurrenceFrequency, RecurrenceStatus
 )
 from .statement_import import (
     ImportStatus,
@@ -126,11 +127,18 @@ __all__ = [
     "MerchantTagTable",
     "MerchantUpdate",
     # Payment Method
-    "PaymentMethodCreate",
-    "PaymentMethodSchema",
     "PaymentMethodTable",
-    "PaymentMethodUpdate",
-    "PaymentType",
+    "AccountTable",
+    "AccountBalanceHistory",
+    "AccountTransfer",
+    "PaymentMethodType",
+    "AccountType",
+    # Recurring Expense
+    "RecurringExpenseTable",
+    "RecurringExpenseHistoryTable", 
+    "RecurringExpenseNotificationTable",
+    "RecurrenceFrequency",
+    "RecurrenceStatus",
     # Statement Import
     "ImportStatus",
     "StatementImportCreate",

@@ -297,6 +297,47 @@ class ExpenseRepository(BaseRepository[ExpenseTable, ExpenseCreate, ExpenseUpdat
         result = await db.execute(query)
         return result.scalars().all()
     
+    async def get_by_category_and_date_range(
+        self,
+        db: AsyncSession,
+        user_id: UUID,
+        category_id: UUID,
+        start_date: date,
+        end_date: date
+    ) -> List[ExpenseTable]:
+        """
+        Get expenses for a specific category and user within a date range.
+        
+        Args:
+            db: Database session
+            user_id: User ID
+            category_id: Category ID
+            start_date: Start date (inclusive)
+            end_date: End date (inclusive)
+            
+        Returns:
+            List of expense instances
+        """
+        query = (
+            select(self.model)
+            .where(
+                and_(
+                    self.model.user_id == user_id,
+                    self.model.category_id == category_id,
+                    self.model.expense_date >= start_date,
+                    self.model.expense_date <= end_date
+                )
+            )
+            .options(
+                selectinload(self.model.category),
+                selectinload(self.model.payment_method)
+            )
+            .order_by(desc(self.model.expense_date))
+        )
+        
+        result = await db.execute(query)
+        return result.scalars().all()
+    
     async def find_similar(
         self,
         db: AsyncSession,

@@ -30,13 +30,16 @@ class ExpenseTable(UserOwnedTable):
     category_id = Column(PGUUID(as_uuid=True), ForeignKey("categories.id"), nullable=False, index=True)
     payment_method_id = Column(PGUUID(as_uuid=True), ForeignKey("payment_methods.id"), nullable=False, index=True)
     statement_import_id = Column(PGUUID(as_uuid=True), ForeignKey("statement_imports.id"), nullable=True, index=True)
+    recurring_expense_id = Column(PGUUID(as_uuid=True), ForeignKey("recurring_expenses.id"), nullable=True, index=True)
     
     # Relationships
     user = relationship("UserTable", back_populates="expenses")
     merchant = relationship("MerchantTable", back_populates="expenses")
     category = relationship("CategoryTable", back_populates="expenses")
     payment_method = relationship("PaymentMethodTable", back_populates="expenses")
+    account = relationship("AccountTable", back_populates="expenses")
     statement_import = relationship("StatementImportTable", back_populates="expenses")
+    recurring_expense = relationship("RecurringExpenseTable", back_populates="generated_expenses")
     attachments = relationship("AttachmentTable", back_populates="expense", cascade="all, delete-orphan")
     expense_tags = relationship("ExpenseTagTable", back_populates="expense", cascade="all, delete-orphan")
 

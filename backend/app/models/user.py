@@ -24,12 +24,14 @@ class UserTable(BaseTable):
     # Relationships
     categories = relationship("CategoryTable", back_populates="user", cascade="all, delete-orphan")
     payment_methods = relationship("PaymentMethodTable", back_populates="user", cascade="all, delete-orphan")
+    accounts = relationship("AccountTable", back_populates="user", cascade="all, delete-orphan")
     expenses = relationship("ExpenseTable", back_populates="user", cascade="all, delete-orphan")
     budgets = relationship("BudgetTable", back_populates="user", cascade="all, delete-orphan")
     merchants = relationship("MerchantTable", back_populates="user", cascade="all, delete-orphan")
     tags = relationship("TagTable", back_populates="user", cascade="all, delete-orphan")
     attachments = relationship("AttachmentTable", back_populates="user", cascade="all, delete-orphan")
     statement_imports = relationship("StatementImportTable", back_populates="user", cascade="all, delete-orphan")
+    recurring_expenses = relationship("RecurringExpenseTable", back_populates="user", cascade="all, delete-orphan")
 
 
 class UserSchema(BaseSchema):

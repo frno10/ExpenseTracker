@@ -20,6 +20,7 @@ from app.models import (
     UserTable,
 )
 from app.repositories import expense_repository
+from app.services.expense_service import expense_service
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +44,7 @@ async def create_expense(
     expense_data.user_id = current_user.id
     
     try:
-        expense = await expense_repository.create(db, obj_in=expense_data)
+        expense = await expense_service.create_expense(db, expense_data, current_user.id)
         logger.info(f"Expense created: {expense.id} by user {current_user.id}")
         return expense
     except Exception as e:
@@ -193,12 +194,16 @@ async def update_expense(
                 detail="Expense not found"
             )
         
-        # Update the expense
-        updated_expense = await expense_repository.update(
-            db, 
-            db_obj=expense, 
-            obj_in=expense_update
+        # Update the expense using the service (includes budget integration)
+        updated_expense = await expense_service.update_expense(
+            db, expense_id, expense_update, current_user.id
         )
+        
+        if not updated_expense:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Expense not found"
+            )
         
         logger.info(f"Updated expense {expense_id} for user {current_user.id}")
         return updated_expense
@@ -243,8 +248,14 @@ async def delete_expense(
                 detail="Expense not found"
             )
         
-        # Delete the expense
-        await expense_repository.delete(db, id=expense_id)
+        # Delete the expense using the service (includes budget integration)
+        success = await expense_service.delete_expense(db, expense_id, current_user.id)
+        
+        if not success:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Expense not found"
+            )
         
         logger.info(f"Deleted expense {expense_id} for user {current_user.id}")
         return {"message": "Expense deleted successfully"}
