@@ -22,6 +22,7 @@ from app.api.statement_import import router as statement_import_router
 from app.api.analytics import router as analytics_router
 from app.api.advanced_analytics import router as advanced_analytics_router
 from app.api.websocket import router as websocket_router
+from app.api.security import router as security_router
 from app.core.config import settings
 from app.core.database import close_db, init_db
 from app.core.logging_config import setup_logging
@@ -39,6 +40,10 @@ from app.core.security_middleware import (
     SessionSecurityMiddleware,
     AuditLoggingMiddleware
 )
+from app.security.headers import SecurityHeadersMiddleware as NewSecurityHeadersMiddleware
+from app.security.csrf import CSRFMiddleware as NewCSRFMiddleware
+from app.security.session import SessionMiddleware as NewSessionMiddleware, session_manager
+from app.security.audit import audit_logger
 from app.core.telemetry import telemetry
 from app.services.recurring_expense_scheduler import (
     start_recurring_expense_scheduler, 
@@ -132,10 +137,13 @@ app = FastAPI(
 
 # Enhanced security middleware (order matters - most specific first!)
 app.add_middleware(AuditLoggingMiddleware)
+app.add_middleware(NewSessionMiddleware, session_manager)  # New session management
 app.add_middleware(SessionSecurityMiddleware, session_timeout=3600)
 app.add_middleware(InputValidationMiddleware, max_content_length=10 * 1024 * 1024)
 app.add_middleware(RateLimitMiddleware, requests_per_minute=60, burst_limit=10)
+app.add_middleware(NewCSRFMiddleware)  # New CSRF protection
 app.add_middleware(CSRFProtectionMiddleware, secret_key=settings.secret_key)
+app.add_middleware(NewSecurityHeadersMiddleware)  # New security headers
 app.add_middleware(EnhancedSecurityHeadersMiddleware)
 
 # Existing middleware
@@ -174,6 +182,7 @@ app.include_router(statement_import_router)
 app.include_router(analytics_router)
 app.include_router(advanced_analytics_router)
 app.include_router(websocket_router, prefix="/api")
+app.include_router(security_router, prefix="/api")
 
 @app.get("/")
 async def root():
