@@ -2,6 +2,7 @@
 FastAPI main application entry point for the Expense Tracker.
 """
 import logging
+import time
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -23,6 +24,10 @@ from app.api.analytics import router as analytics_router
 from app.api.advanced_analytics import router as advanced_analytics_router
 from app.api.websocket import router as websocket_router
 from app.api.security import router as security_router
+from app.monitoring.dashboard import router as monitoring_router
+from app.monitoring.health import health_checker
+from app.monitoring.metrics import metrics_collector
+from app.monitoring.alerts import alert_manager
 from app.core.config import settings
 from app.core.database import close_db, init_db
 from app.core.logging_config import setup_logging
@@ -109,6 +114,16 @@ async def lifespan(app: FastAPI):
         logger.error(f"Failed to start WebSocket cleanup task: {e}")
         # Continue without cleanup task
     
+    # Initialize monitoring system
+    try:
+        await metrics_collector.initialize()
+        await alert_manager.start_evaluation()
+        health_checker._start_time = time.time()  # Set startup time
+        logger.info("Monitoring system initialized successfully")
+    except Exception as e:
+        logger.error(f"Failed to initialize monitoring system: {e}")
+        # Continue without monitoring
+    
     yield
     
     # Shutdown
@@ -121,6 +136,14 @@ async def lifespan(app: FastAPI):
         logger.info("WebSocket connections cleaned up")
     except Exception as e:
         logger.error(f"Failed to cleanup WebSocket connections: {e}")
+    
+    # Cleanup monitoring system
+    try:
+        await alert_manager.stop_evaluation()
+        await metrics_collector.cleanup()
+        logger.info("Monitoring system cleaned up")
+    except Exception as e:
+        logger.error(f"Failed to cleanup monitoring system: {e}")
     
     await stop_recurring_expense_scheduler()
     await close_db()
@@ -183,6 +206,7 @@ app.include_router(analytics_router)
 app.include_router(advanced_analytics_router)
 app.include_router(websocket_router, prefix="/api")
 app.include_router(security_router, prefix="/api")
+app.include_router(monitoring_router, prefix="/api")
 
 @app.get("/")
 async def root():
