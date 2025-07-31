@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { Eye, EyeOff, LogIn, Mail, Lock } from 'lucide-react'
+import { Eye, EyeOff, LogIn, Mail, Lock, RefreshCw } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 
 export function Login() {
@@ -9,12 +9,35 @@ export function Login() {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [showResendConfirmation, setShowResendConfirmation] = useState(false)
+  const [resendLoading, setResendLoading] = useState(false)
+  const [resendMessage, setResendMessage] = useState('')
 
-  const { login } = useAuth()
+  const { login, resendConfirmation } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
 
   const from = location.state?.from?.pathname || '/'
+
+  const handleResendConfirmation = async () => {
+    if (!email) {
+      setError('Please enter your email address first.')
+      return
+    }
+
+    setResendLoading(true)
+    setResendMessage('')
+
+    try {
+      const message = await resendConfirmation(email)
+      setResendMessage(message)
+      setError('') // Clear the error since we're showing success message
+    } catch (error: any) {
+      setError(error.message || 'Failed to resend confirmation email.')
+    } finally {
+      setResendLoading(false)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -25,7 +48,15 @@ export function Login() {
       await login(email, password)
       navigate(from, { replace: true })
     } catch (error: any) {
-      setError(error.message || 'Login failed. Please try again.')
+      const errorMessage = error.message || 'Login failed. Please try again.'
+      setError(errorMessage)
+      
+      // Show resend confirmation button if email not confirmed
+      if (errorMessage.includes('confirm your account') || errorMessage.includes('email confirmation')) {
+        setShowResendConfirmation(true)
+      } else {
+        setShowResendConfirmation(false)
+      }
     } finally {
       setLoading(false)
     }
@@ -56,6 +87,29 @@ export function Login() {
           {error && (
             <div className="rounded-md bg-red-50 p-4">
               <div className="text-sm text-red-700">{error}</div>
+              {showResendConfirmation && (
+                <div className="mt-3">
+                  <button
+                    type="button"
+                    onClick={handleResendConfirmation}
+                    disabled={resendLoading}
+                    className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {resendLoading ? (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-700 mr-2"></div>
+                    ) : (
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                    )}
+                    Resend confirmation email
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {resendMessage && (
+            <div className="rounded-md bg-green-50 p-4">
+              <div className="text-sm text-green-700">{resendMessage}</div>
             </div>
           )}
 

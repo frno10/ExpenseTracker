@@ -9,7 +9,7 @@ from opentelemetry import trace
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.core.logging_config import set_correlation_id, log_request
-from app.core.telemetry import record_request_metrics, record_error_metrics
+from app.core.telemetry_simple import record_request_metrics, record_error_metrics
 
 
 class ObservabilityMiddleware(BaseHTTPMiddleware):

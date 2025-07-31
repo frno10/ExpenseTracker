@@ -20,7 +20,7 @@ from app.models.budget import (
     CategoryBudgetSchema,
     CategoryBudgetUpdate,
 )
-from app.models.user import User
+from app.models.user import UserTable as User
 from app.services.budget_service import budget_service, BudgetAlert
 from sqlalchemy.ext.asyncio import AsyncSession
 

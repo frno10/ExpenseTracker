@@ -38,6 +38,9 @@ from .expense import (
     ExpenseSchema,
     ExpenseTable,
     ExpenseUpdate,
+    PaymentMethodSchema,
+    PaymentMethodCreate,
+    PaymentMethodUpdate,
 )
 from .merchant import (
     MerchantCreate,
@@ -50,6 +53,18 @@ from .payment_method import (
     PaymentMethodTable, AccountTable, AccountBalanceHistory, AccountTransfer,
     PaymentMethodType, AccountType
 )
+# Define PaymentType enum directly to avoid import conflicts
+from enum import Enum
+
+class PaymentType(str, Enum):
+    """Enumeration of supported payment types."""
+    CASH = "cash"
+    CREDIT_CARD = "credit_card"
+    DEBIT_CARD = "debit_card"
+    BANK_TRANSFER = "bank_transfer"
+    CHECK = "check"
+    DIGITAL_WALLET = "digital_wallet"
+    OTHER = "other"
 from .recurring_expense import (
     RecurringExpenseTable, RecurringExpenseHistoryTable, RecurringExpenseNotificationTable,
     RecurrenceFrequency, RecurrenceStatus
@@ -80,6 +95,7 @@ UserSchema.model_rebuild()
 CategorySchema.model_rebuild()
 MerchantSchema.model_rebuild()
 TagSchema.model_rebuild()
+# PaymentMethodSchema.model_rebuild()  # Will be handled in expense.py
 ExpenseSchema.model_rebuild()
 AttachmentSchema.model_rebuild()
 BudgetSchema.model_rebuild()
@@ -120,6 +136,9 @@ __all__ = [
     "ExpenseSchema",
     "ExpenseTable",
     "ExpenseUpdate",
+    "PaymentMethodSchema",
+    "PaymentMethodCreate",
+    "PaymentMethodUpdate",
     # Merchant
     "MerchantCreate",
     "MerchantSchema",
@@ -128,6 +147,7 @@ __all__ = [
     "MerchantUpdate",
     # Payment Method
     "PaymentMethodTable",
+    "PaymentType",
     "AccountTable",
     "AccountBalanceHistory",
     "AccountTransfer",

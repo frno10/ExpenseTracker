@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field, validator
 
 from ..core.database import get_db
 from ..core.auth import get_current_user
-from ..models.user import User
+from ..models.user import UserTable as User
 from ..models.payment_method import PaymentMethodType, AccountType
 from ..services.payment_method_service import PaymentMethodService, AccountService
 from ..core.exceptions import ValidationError, NotFoundError, BusinessLogicError

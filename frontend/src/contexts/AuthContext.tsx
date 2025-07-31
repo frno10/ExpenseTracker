@@ -14,6 +14,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>
   register: (email: string, password: string, fullName: string) => Promise<void>
   logout: () => Promise<void>
+  resendConfirmation: (email: string) => Promise<string>
   isAuthenticated: boolean
 }
 
@@ -97,12 +98,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }
 
+  const resendConfirmation = async (email: string): Promise<string> => {
+    try {
+      const response = await apiClient.resendConfirmation(email)
+      return response.message
+    } catch (error) {
+      console.error('Resend confirmation failed:', error)
+      throw error
+    }
+  }
+
   const value: AuthContextType = {
     user,
     loading,
     login,
     register,
     logout,
+    resendConfirmation,
     isAuthenticated: !!user,
   }
 

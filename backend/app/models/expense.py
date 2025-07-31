@@ -14,6 +14,39 @@ from sqlalchemy.orm import relationship
 from .base import BaseSchema, CreateSchema, UpdateSchema, UserOwnedTable
 
 
+# Simple PaymentMethodSchema to avoid circular imports
+class PaymentMethodSchema(BaseSchema):
+    """Simple payment method schema for expense relationships."""
+    name: str
+    type: str
+
+class PaymentMethodCreate(CreateSchema):
+    """Simple payment method create schema."""
+    name: str
+    type: str  # Should be a PaymentType enum value
+    account_number: Optional[str] = None
+    institution: Optional[str] = None
+    
+    @validator("type")
+    def validate_payment_type(cls, v):
+        """Validate payment type is a valid enum value."""
+        from . import PaymentType
+        if isinstance(v, str):
+            try:
+                PaymentType(v)
+                return v
+            except ValueError:
+                raise ValueError(f"Invalid payment type: {v}")
+        return v
+
+class PaymentMethodUpdate(UpdateSchema):
+    """Simple payment method update schema."""
+    name: Optional[str] = None
+    type: Optional[str] = None
+    account_number: Optional[str] = None
+    institution: Optional[str] = None
+
+
 class ExpenseTable(UserOwnedTable):
     """SQLAlchemy model for expenses."""
     

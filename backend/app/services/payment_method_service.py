@@ -8,7 +8,8 @@ from ..models.payment_method import (
     PaymentMethodTable, AccountTable, AccountBalanceHistory, AccountTransfer,
     PaymentMethodType, AccountType
 )
-from ..repositories.payment_method_repository import PaymentMethodRepository, AccountRepository
+from ..repositories.payment_method import payment_method_repository
+from ..repositories.account_repository import AccountRepository
 from ..core.exceptions import ValidationError, NotFoundError, BusinessLogicError
 
 

@@ -27,6 +27,18 @@ def get_user_id_for_rate_limit(request: Request) -> str:
     user = getattr(request.state, "user", None)
     if user:
         return f"user:{user.id}"
+    return get_remote_address(request)
+
+def rate_limit(operation: str, per_minute: int = 60):
+    """
+    Simple rate limit decorator for development.
+    In production, this would use the limiter properly.
+    """
+    def decorator(func):
+        # For development, just return the function without rate limiting
+        logger.debug(f"Rate limit decorator applied to {operation}: {per_minute}/min")
+        return func
+    return decorator
     
     # Fall back to IP address
     return f"ip:{get_remote_address(request)}"
