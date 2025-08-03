@@ -51,7 +51,7 @@ app.add_middleware(
         "http://localhost:5173",  # Vite dev server
         "http://127.0.0.1:5173",
         "https://*.netlify.app",  # Netlify domains
-        "https://your-app-name.netlify.app"  # Replace with your actual Netlify URL
+        "https://incandescent-pixie-7c87ba.netlify.app/"  # Replace with your actual Netlify URL
     ],
     allow_credentials=True,
     allow_methods=["*"],
