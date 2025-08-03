@@ -29,31 +29,20 @@ click==8.1.7
 rich==13.9.4
 email-validator==2.2.0
 
-# OpenTelemetry observability (stable versions only)
-opentelemetry-api==1.21.0
-opentelemetry-sdk==1.21.0
-opentelemetry-instrumentation==0.48b0
-opentelemetry-instrumentation-fastapi==0.48b0
-opentelemetry-instrumentation-sqlalchemy==0.48b0
-opentelemetry-exporter-jaeger-thrift==1.21.0
-prometheus-client==0.21.0
+# Essential packages only for production
 requests==2.31.0
 
-# Statement parsing dependencies
-# pandas==2.2.0  # Temporarily disabled due to Python 3.13 compatibility
-PyPDF2==3.0.1
-pdfplumber==0.10.3
-openpyxl==3.1.2
-xlrd==2.0.1
-ofxparse==0.21
-python-magic==0.4.27
+# Statement parsing dependencies (optional - install separately if needed)
+# PyPDF2==3.0.1
+# pdfplumber==0.10.3
+# openpyxl==3.1.2
+# xlrd==2.0.1
+# ofxparse==0.21
+# python-magic==0.4.27
 chardet==5.2.0
 
-# File security and validation
-# python-magic-bin==0.4.14  # Windows binary for python-magic (Windows only)
-clamd==1.0.2  # ClamAV daemon client for virus scanning
+# File security and validation (minimal)
 filetype==1.2.0  # Additional file type detection
-Pillow>=11.0.0  # Image processing for receipt attachments
 
 # Security dependencies
 bleach==6.2.0  # HTML sanitization

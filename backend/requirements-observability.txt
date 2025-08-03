@@ -1,0 +1,19 @@
+# Optional OpenTelemetry observability packages
+# Install these separately if you need monitoring/tracing
+# pip install -r requirements-observability.txt
+
+# OpenTelemetry core (compatible versions)
+opentelemetry-api==1.21.0
+opentelemetry-sdk==1.21.0
+opentelemetry-semantic-conventions==0.42b0
+
+# OpenTelemetry instrumentation (matching semantic conventions version)
+opentelemetry-instrumentation==0.42b0
+opentelemetry-instrumentation-fastapi==0.42b0
+opentelemetry-instrumentation-sqlalchemy==0.42b0
+
+# OpenTelemetry exporters
+opentelemetry-exporter-jaeger-thrift==1.21.0
+
+# Metrics
+prometheus-client==0.21.0

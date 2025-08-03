@@ -1,0 +1,19 @@
+# Optional file parsing packages
+# Install these separately if you need file processing features
+# pip install -r requirements-parsing.txt
+
+# PDF processing
+PyPDF2==3.0.1
+
+# Excel/CSV processing
+openpyxl==3.1.2
+xlrd==2.0.1
+
+# Financial file formats
+ofxparse==0.21
+
+# Image processing
+Pillow>=10.4.0
+
+# File type detection (advanced)
+python-magic==0.4.27
