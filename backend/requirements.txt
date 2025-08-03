@@ -1,35 +1,35 @@
 # Core FastAPI dependencies
-fastapi==0.104.1
-uvicorn[standard]==0.24.0
-pydantic==2.5.0
-pydantic-settings==2.1.0
-websockets==12.0
+fastapi==0.115.13
+uvicorn[standard]==0.32.1
+pydantic==2.10.3
+pydantic-settings==2.6.1
+websockets==13.1
 
 # Database
-sqlalchemy==2.0.23
-alembic==1.13.1
-asyncpg==0.29.0
+sqlalchemy==2.0.41
+alembic==1.14.0
+asyncpg==0.30.0
 
 # Supabase
-supabase==2.3.0
-postgrest==0.13.0
+supabase==2.10.0
+postgrest==0.17.0
 
 # Development tools
-pytest==7.4.3
-pytest-asyncio==0.21.1
-httpx==0.24.1
-black==23.11.0
-mypy==1.7.1
-pre-commit==3.6.0
+pytest==8.3.5
+pytest-asyncio==0.25.0
+httpx==0.28.1
+black==24.10.0
+mypy==1.15.0
+pre-commit==4.0.1
 
 # Additional utilities
-python-multipart==0.0.6
+python-multipart==0.0.12
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 slowapi==0.1.9
 click==8.1.7
-rich==13.7.0
-email-validator==2.1.1
+rich==13.9.4
+email-validator==2.2.0
 
 # OpenTelemetry observability
 opentelemetry-api==1.21.0
@@ -59,8 +59,8 @@ chardet==5.2.0
 # python-magic-bin==0.4.14  # Windows binary for python-magic (Windows only)
 clamd==1.0.2  # ClamAV daemon client for virus scanning
 filetype==1.2.0  # Additional file type detection
-Pillow>=10.4.0  # Image processing for receipt attachments
+Pillow>=11.0.0  # Image processing for receipt attachments
 
 # Security dependencies
-bleach==6.1.0  # HTML sanitization
-cryptography>=41.0.0  # Enhanced cryptography support
+bleach==6.2.0  # HTML sanitization
+cryptography>=44.0.0  # Enhanced cryptography support

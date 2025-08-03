@@ -78,6 +78,9 @@ class FileSecurityService:
             cd = clamd.ClamdUnixSocket()
             cd.ping()
             return True
+        except ImportError:
+            logger.debug("ClamAV library not installed")
+            return False
         except Exception as e:
             logger.debug(f"ClamAV not available: {e}")
             return False
@@ -222,6 +225,9 @@ class FileSecurityService:
             
             return len(errors) == 0, errors
             
+        except ImportError:
+            logger.debug("ClamAV library not available for virus scanning")
+            return True, []
         except Exception as e:
             logger.error(f"Error during virus scan: {e}")
             # Don't fail validation if virus scanning fails
