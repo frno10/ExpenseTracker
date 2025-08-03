@@ -1,16 +1,12 @@
 import { useState, useEffect } from 'react'
-import { 
-  Search, 
-  Filter, 
-  Plus, 
-  Download, 
-  Edit, 
-  Trash2, 
-  Calendar,
+import {
+  Search,
+  Filter,
+  Plus,
+  Download,
+  Edit,
+  Trash2,
   DollarSign,
-  Tag,
-  Building,
-  ChevronDown,
   X
 } from 'lucide-react'
 import { apiClient } from '../lib/api'
@@ -73,7 +69,7 @@ export function Expenses() {
   const loadExpenses = async () => {
     try {
       setLoading(true)
-      
+
       const params: any = {}
       if (filters.search) params.search = filters.search
       if (filters.category) params.category = filters.category
@@ -98,7 +94,7 @@ export function Expenses() {
         apiClient.getCategories().catch(() => []),
         apiClient.getAccounts().catch(() => [])
       ])
-      
+
       setCategories(categoriesData.map((c: any) => c.name))
       setAccounts(accountsData.map((a: any) => a.name))
     } catch (error) {
@@ -123,8 +119,8 @@ export function Expenses() {
   }
 
   const handleSelectExpense = (expenseId: string) => {
-    setSelectedExpenses(prev => 
-      prev.includes(expenseId) 
+    setSelectedExpenses(prev =>
+      prev.includes(expenseId)
         ? prev.filter(id => id !== expenseId)
         : [...prev, expenseId]
     )
@@ -140,7 +136,7 @@ export function Expenses() {
 
   const handleBulkDelete = async () => {
     if (selectedExpenses.length === 0) return
-    
+
     if (confirm(`Delete ${selectedExpenses.length} selected expenses?`)) {
       try {
         await apiClient.bulkDeleteExpenses(selectedExpenses)
@@ -241,7 +237,7 @@ export function Expenses() {
             <Download className="h-4 w-4 mr-2" />
             Export
           </button>
-          <button 
+          <button
             onClick={handleAddExpense}
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
           >
@@ -266,11 +262,10 @@ export function Expenses() {
           </div>
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`inline-flex items-center justify-center rounded-md border px-4 py-2 text-sm font-medium transition-colors ${
-              hasActiveFilters 
-                ? 'border-primary bg-primary text-primary-foreground' 
-                : 'border-input bg-background hover:bg-accent hover:text-accent-foreground'
-            }`}
+            className={`inline-flex items-center justify-center rounded-md border px-4 py-2 text-sm font-medium transition-colors ${hasActiveFilters
+              ? 'border-primary bg-primary text-primary-foreground'
+              : 'border-input bg-background hover:bg-accent hover:text-accent-foreground'
+              }`}
           >
             <Filter className="h-4 w-4 mr-2" />
             Filters
@@ -299,7 +294,7 @@ export function Expenses() {
                   ))}
                 </select>
               </div>
-              
+
               <div>
                 <label className="text-sm font-medium mb-1 block">Account</label>
                 <select
@@ -313,7 +308,7 @@ export function Expenses() {
                   ))}
                 </select>
               </div>
-              
+
               <div>
                 <label className="text-sm font-medium mb-1 block">Date From</label>
                 <input
@@ -323,7 +318,7 @@ export function Expenses() {
                   className="w-full px-3 py-2 border border-input rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
-              
+
               <div>
                 <label className="text-sm font-medium mb-1 block">Date To</label>
                 <input
@@ -333,7 +328,7 @@ export function Expenses() {
                   className="w-full px-3 py-2 border border-input rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
-              
+
               <div>
                 <label className="text-sm font-medium mb-1 block">Min Amount</label>
                 <input
@@ -345,7 +340,7 @@ export function Expenses() {
                   className="w-full px-3 py-2 border border-input rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
-              
+
               <div>
                 <label className="text-sm font-medium mb-1 block">Max Amount</label>
                 <input
@@ -358,7 +353,7 @@ export function Expenses() {
                 />
               </div>
             </div>
-            
+
             {hasActiveFilters && (
               <div className="mt-4 flex justify-end">
                 <button
@@ -457,13 +452,13 @@ export function Expenses() {
                     </td>
                     <td className="p-4 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <button 
+                        <button
                           onClick={() => handleEditExpense(expense)}
                           className="p-1 hover:bg-muted rounded"
                         >
                           <Edit className="h-4 w-4" />
                         </button>
-                        <button 
+                        <button
                           onClick={() => handleDeleteExpense(expense.id)}
                           className="p-1 hover:bg-muted rounded text-destructive"
                         >
@@ -481,13 +476,13 @@ export function Expenses() {
             <DollarSign className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
             <h3 className="text-lg font-semibold mb-2">No expenses found</h3>
             <p className="text-muted-foreground mb-4">
-              {hasActiveFilters 
+              {hasActiveFilters
                 ? 'Try adjusting your filters or search terms.'
                 : 'Import a statement or add your first expense to get started.'
               }
             </p>
             {!hasActiveFilters && (
-              <button 
+              <button
                 onClick={handleAddExpense}
                 className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
               >

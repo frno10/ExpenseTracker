@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { StatementUpload } from '../components/StatementUpload'
 import { StatementPreview } from '../components/StatementPreview'
 import { ImportConfirmation } from '../components/ImportConfirmation'
