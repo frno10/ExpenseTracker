@@ -9,7 +9,7 @@ import {
   DollarSign,
   X
 } from 'lucide-react'
-import { apiClient } from '../lib/api'
+import { apiClient } from '../lib/api-simple'
 import { ExpenseForm } from '../components/ExpenseForm'
 
 interface Expense {

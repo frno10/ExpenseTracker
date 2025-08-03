@@ -14,7 +14,7 @@ import {
   PieChart,
   Bell
 } from 'lucide-react'
-import { apiClient } from '../lib/api'
+import { apiClient } from '../lib/api-simple'
 
 interface DashboardStats {
   totalExpenses: number
