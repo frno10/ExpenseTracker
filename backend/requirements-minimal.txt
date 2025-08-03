@@ -2,21 +2,20 @@
 # Use this if you're still having build issues
 
 # Core FastAPI dependencies
-fastapi==0.115.13
-uvicorn==0.32.1
-pydantic==2.10.3
-pydantic-settings==2.6.1
+fastapi==0.104.1
+uvicorn==0.24.0
+pydantic==2.5.0
 
 # Database
-sqlalchemy==2.0.41
-asyncpg==0.30.0
+sqlalchemy==2.0.23
+asyncpg==0.29.0
 
 # Supabase (stable version)
-supabase==2.8.0
+supabase==2.3.0
 
 # Essential utilities only
-python-multipart==0.0.12
+python-multipart==0.0.6
 requests==2.31.0
 
 # Security (minimal)
-cryptography>=44.0.0
+cryptography>=41.0.0

@@ -14,8 +14,7 @@ alembic==1.14.0
 asyncpg==0.30.0
 
 # Supabase (stable versions)
-supabase==2.8.0
-postgrest==0.16.0
+supabase==2.7.0
 
 # Additional utilities
 python-multipart==0.0.12
