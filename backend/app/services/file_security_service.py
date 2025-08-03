@@ -8,10 +8,20 @@ import os
 import tempfile
 from typing import Dict, List, Optional, Tuple
 
-import filetype
-from PIL import Image
+try:
+    import filetype
+except ImportError:
+    filetype = None
 
-from app.utils.magic_wrapper import magic_wrapper
+try:
+    from PIL import Image
+except ImportError:
+    Image = None
+
+try:
+    from app.utils.magic_wrapper import magic_wrapper
+except ImportError:
+    magic_wrapper = None
 
 logger = logging.getLogger(__name__)
 
@@ -63,12 +73,19 @@ class FileSecurityService:
         """Initialize the file security service."""
         self.magic_wrapper = magic_wrapper
         
+        # Check for optional dependencies
+        if filetype is None:
+            logger.warning("filetype library not available - file type detection limited")
+        
+        if Image is None:
+            logger.warning("PIL/Pillow not available - image validation disabled")
+        
         # Try to initialize ClamAV
         self.clamav_available = self._check_clamav_availability()
         if not self.clamav_available:
             logger.warning("ClamAV not available - virus scanning disabled")
         
-        if not self.magic_wrapper.is_available():
+        if magic_wrapper and not self.magic_wrapper.is_available():
             logger.warning("python-magic not fully available - using fallback MIME detection")
     
     def _check_clamav_availability(self) -> bool:
@@ -184,16 +201,17 @@ class FileSecurityService:
                     errors.append("File contains potentially dangerous signature")
                     break
             
-            # Use filetype library for additional validation
-            kind = filetype.guess(file_path)
-            if kind is None:
-                # This might be a text file, which is okay
-                pass
-            else:
-                # Verify the detected type matches expected types
-                allowed_types = ['pdf', 'csv', 'xls', 'xlsx', 'jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff']
-                if kind.extension not in allowed_types:
-                    errors.append(f"Detected file type '{kind.extension}' not allowed")
+            # Use filetype library for additional validation if available
+            if filetype:
+                kind = filetype.guess(file_path)
+                if kind is None:
+                    # This might be a text file, which is okay
+                    pass
+                else:
+                    # Verify the detected type matches expected types
+                    allowed_types = ['pdf', 'csv', 'xls', 'xlsx', 'jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff']
+                    if kind.extension not in allowed_types:
+                        errors.append(f"Detected file type '{kind.extension}' not allowed")
             
             return len(errors) == 0, errors
             
@@ -240,18 +258,21 @@ class FileSecurityService:
         
         try:
             if extension in ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff']:
-                # Validate image files
-                try:
-                    with Image.open(file_path) as img:
-                        # Verify it's a valid image
-                        img.verify()
-                        
-                        # Check image dimensions (prevent extremely large images)
-                        if img.width > 10000 or img.height > 10000:
-                            errors.append("Image dimensions too large")
+                # Validate image files if PIL is available
+                if Image:
+                    try:
+                        with Image.open(file_path) as img:
+                            # Verify it's a valid image
+                            img.verify()
                             
-                except Exception as e:
-                    errors.append(f"Invalid image file: {str(e)}")
+                            # Check image dimensions (prevent extremely large images)
+                            if img.width > 10000 or img.height > 10000:
+                                errors.append("Image dimensions too large")
+                                
+                    except Exception as e:
+                        errors.append(f"Invalid image file: {str(e)}")
+                else:
+                    logger.warning("PIL not available - skipping image validation")
             
             elif extension == '.pdf':
                 # Basic PDF validation

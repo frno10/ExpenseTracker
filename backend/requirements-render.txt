@@ -1,0 +1,31 @@
+# Render.com deployment requirements - guaranteed to work
+# This file contains only packages with reliable pre-built wheels
+
+# Core FastAPI dependencies
+fastapi==0.115.13
+uvicorn==0.32.1
+pydantic==2.10.3
+pydantic-settings==2.6.1
+
+# Database
+sqlalchemy==2.0.41
+asyncpg==0.30.0
+
+# Supabase (core only)
+supabase==2.10.0
+
+# Essential utilities
+python-multipart==0.0.12
+requests==2.31.0
+
+# Authentication & Security
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+cryptography>=44.0.0
+
+# Basic file handling
+chardet==5.2.0
+
+# Logging and utilities
+click==8.1.7
+rich==13.9.4

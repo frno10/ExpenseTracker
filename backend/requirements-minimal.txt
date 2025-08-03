@@ -1,31 +1,22 @@
-# Minimal requirements for deployment - only essential packages
+# Ultra-minimal requirements for deployment - only absolutely essential packages
 # Use this if you're still having build issues
 
 # Core FastAPI dependencies
 fastapi==0.115.13
-uvicorn[standard]==0.32.1
+uvicorn==0.32.1
 pydantic==2.10.3
 pydantic-settings==2.6.1
 
 # Database
 sqlalchemy==2.0.41
-alembic==1.14.0
 asyncpg==0.30.0
 
 # Supabase
 supabase==2.10.0
-postgrest==0.17.0
 
-# Essential utilities
+# Essential utilities only
 python-multipart==0.0.12
-python-jose[cryptography]==3.3.0
-passlib[bcrypt]==1.7.4
 requests==2.31.0
 
-# File handling (minimal)
-filetype==1.2.0
-Pillow>=11.0.0
-
-# Security
-bleach==6.2.0
+# Security (minimal)
 cryptography>=44.0.0
