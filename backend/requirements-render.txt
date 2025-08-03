@@ -2,30 +2,30 @@
 # This file contains only packages with reliable pre-built wheels
 
 # Core FastAPI dependencies
-fastapi==0.115.13
-uvicorn==0.32.1
-pydantic==2.10.3
-pydantic-settings==2.6.1
+fastapi==0.115.0
+uvicorn==0.30.0
+pydantic==2.9.0
+pydantic-settings==2.5.0
 
 # Database
-sqlalchemy==2.0.41
-asyncpg==0.30.0
+sqlalchemy==2.0.35
+asyncpg==0.29.0
 
-# Supabase (core only)
-supabase==2.10.0
+# Supabase (stable version)
+supabase==2.7.0
 
 # Essential utilities
-python-multipart==0.0.12
+python-multipart==0.0.9
 requests==2.31.0
 
 # Authentication & Security
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
-cryptography>=44.0.0
+cryptography>=42.0.0
 
 # Basic file handling
 chardet==5.2.0
 
 # Logging and utilities
 click==8.1.7
-rich==13.9.4
+rich==13.7.0
