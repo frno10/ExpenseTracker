@@ -215,22 +215,26 @@ CREATE POLICY "Users can view own expenses" ON public.expenses
 ### 1. Registration Fails with "Invalid Email"
 
 **Problem**: Supabase rejects certain email formats
+
 ```
 Registration failed: Email address "test@example.com" is invalid
 ```
 
 **Solution**: Use realistic email domains
+
 - ✅ Good: `user@gmail.com`, `test@outlook.com`
 - ❌ Bad: `test@example.com`, `user@test.com`
 
 ### 2. CORS Errors
 
 **Problem**: Frontend can't reach backend
+
 ```
 OPTIONS /api/v1/auth/register HTTP/1.1" 400 Bad Request
 ```
 
 **Solution**: Ensure frontend origin is in CORS allowed origins
+
 ```python
 allow_origins=[
     "http://localhost:3000",   # React dev server
@@ -245,26 +249,31 @@ allow_origins=[
 The application now provides specific error messages for different login failure scenarios:
 
 **Email Not Confirmed** (HTTP 403):
+
 ```
 Please check your email and confirm your account before logging in.
 ```
 
 **Invalid Credentials** (HTTP 401):
+
 ```
 Invalid email or password. Please check your credentials and try again.
 ```
 
 **User Not Found** (HTTP 404):
+
 ```
 No account found with this email address. Please register first.
 ```
 
 **Rate Limited** (HTTP 429):
+
 ```
 Too many login attempts. Please wait a moment and try again.
 ```
 
 **Debug Steps**:
+
 1. Check the specific error message returned
 2. For email confirmation issues, use the resend confirmation endpoint
 3. Check Supabase Auth dashboard for user status
@@ -366,6 +375,7 @@ The application logs all authentication attempts with detailed information:
 ```
 
 Check logs in:
+
 - Console output (when running uvicorn)
 - `backend/app.log` file
 - Supabase dashboard logs

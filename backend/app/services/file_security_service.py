@@ -9,8 +9,9 @@ import tempfile
 from typing import Dict, List, Optional, Tuple
 
 import filetype
-import magic
 from PIL import Image
+
+from app.utils.magic_wrapper import magic_wrapper
 
 logger = logging.getLogger(__name__)
 
@@ -60,13 +61,15 @@ class FileSecurityService:
     
     def __init__(self):
         """Initialize the file security service."""
-        self.magic_mime = magic.Magic(mime=True)
-        self.magic_type = magic.Magic()
+        self.magic_wrapper = magic_wrapper
         
         # Try to initialize ClamAV
         self.clamav_available = self._check_clamav_availability()
         if not self.clamav_available:
             logger.warning("ClamAV not available - virus scanning disabled")
+        
+        if not self.magic_wrapper.is_available():
+            logger.warning("python-magic not fully available - using fallback MIME detection")
     
     def _check_clamav_availability(self) -> bool:
         """Check if ClamAV daemon is available."""
@@ -119,9 +122,11 @@ class FileSecurityService:
             
             # Validate MIME type
             try:
-                detected_mime = self.magic_mime.from_file(file_path)
-                if detected_mime not in self.ALLOWED_MIME_TYPES:
+                detected_mime = self.magic_wrapper.get_mime_type(file_path)
+                if detected_mime and detected_mime not in self.ALLOWED_MIME_TYPES:
                     errors.append(f"MIME type '{detected_mime}' not allowed")
+                elif not detected_mime:
+                    logger.warning("Could not determine MIME type")
             except Exception as e:
                 logger.warning(f"Failed to detect MIME type: {e}")
                 errors.append("Could not determine file type")
@@ -311,8 +316,8 @@ class FileSecurityService:
                 
                 # Get MIME type and description
                 try:
-                    metadata['mime_type'] = self.magic_mime.from_file(file_path)
-                    metadata['file_type_description'] = self.magic_type.from_file(file_path)
+                    metadata['mime_type'] = self.magic_wrapper.get_mime_type(file_path) or ''
+                    metadata['file_type_description'] = self.magic_wrapper.get_file_type(file_path) or ''
                 except Exception as e:
                     logger.warning(f"Failed to get file type info: {e}")
         

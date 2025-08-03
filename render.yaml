@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: expense-tracker-backend
+    env: python
+    buildCommand: |
+      cd backend &&
+      pip install --upgrade pip &&
+      pip install -r requirements-prod.txt
+    startCommand: cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: DATABASE_URL
+        fromDatabase:
+          name: expense-tracker-db
+          property: connectionString
+    healthCheckPath: /health
+    
+databases:
+  - name: expense-tracker-db
+    databaseName: expense_tracker
+    user: expense_tracker_user

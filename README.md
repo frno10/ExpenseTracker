@@ -87,8 +87,44 @@ DEBUG=true
 ## 📖 Documentation
 
 - [DEVELOPMENT.md](DEVELOPMENT.md) - Complete development setup guide
+- [DEPLOYMENT.md](docs/DEPLOYMENT.md) - Production deployment guide
+- [SUPABASE_AUTHENTICATION.md](docs/SUPABASE_AUTHENTICATION.md) - Authentication system guide
 - [API Docs](http://localhost:8000/docs) - Interactive API documentation (when running)
 - [Supabase Dashboard](https://supabase.com/dashboard) - Database and auth management
+
+## 🚀 Deployment
+
+Your application is production-ready! Choose from several deployment options:
+
+### 🆓 100% FREE Deploy (Recommended)
+
+- **Frontend**: Netlify (100GB bandwidth/month)
+- **Backend**: Render (750 hours/month)  
+- **Database**: Supabase (500MB storage)
+- **Total Cost**: $0/month forever
+
+```powershell
+# Windows - Deploy to free tier
+.\scripts\deploy-free.ps1
+
+# Linux/Mac - Deploy to free tier  
+./scripts/deploy-free.sh
+```
+
+### 💰 Premium Deploy
+
+- **Frontend**: Vercel ($20/month)
+- **Backend**: Railway ($5/month)
+- **Database**: Supabase (free tier)
+
+### 🐳 Docker Deploy
+
+```powershell
+# Full Docker deployment
+.\scripts\deploy.ps1
+```
+
+See [FREE_DEPLOYMENT.md](docs/FREE_DEPLOYMENT.md) for free deployment or [DEPLOYMENT.md](docs/DEPLOYMENT.md) for all options.
 
 ## 🤝 Contributing
 
