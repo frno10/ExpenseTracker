@@ -1,0 +1,19 @@
+[build]
+  # Directory to change to before starting a build
+  base = "frontend"
+  
+  # Directory to publish (relative to base directory)
+  publish = "dist"
+  
+  # Build command
+  command = "npm run build"
+
+# Redirect all requests to index.html for SPA routing
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Environment variables (these will be set in Netlify dashboard)
+[build.environment]
+  NODE_VERSION = "18"
