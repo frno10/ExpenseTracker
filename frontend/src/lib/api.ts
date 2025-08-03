@@ -4,11 +4,7 @@
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1'
 
-// Debug API configuration
-console.log('🌐 API Configuration:')
-console.log('VITE_API_URL from env:', import.meta.env.VITE_API_URL)
-console.log('API_BASE_URL being used:', API_BASE_URL)
-console.log('Is using fallback?', !import.meta.env.VITE_API_URL)
+
 
 class ApiClient {
   private baseUrl: string

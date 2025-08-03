@@ -436,3 +436,4 @@ grafana_data/
 *.njsproj
 *.sln
 *.sw?
+my-project-info.md
