@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { X, Plus, Tag, Calendar, DollarSign, FileText, CreditCard } from 'lucide-react'
-import { apiClient } from '../lib/api'
+import { apiClient } from '../lib/api-simple'
 
 interface ExpenseFormProps {
   expense?: Expense | null

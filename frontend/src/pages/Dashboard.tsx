@@ -65,7 +65,13 @@ export function Dashboard() {
       
       // Load dashboard statistics
       const [statsData, expensesData, alertsData] = await Promise.all([
-        apiClient.getDashboardStats().catch(() => ({})),
+        apiClient.getDashboardStats().catch(() => ({
+          total_expenses: 0,
+          monthly_spending: 0,
+          categories_count: 0,
+          budget_usage: 0,
+          monthly_trend: 0
+        })),
         apiClient.getExpenses({ size: 5 }).catch(() => ({ items: [] })),
         apiClient.getBudgetAlerts().catch(() => [])
       ])
