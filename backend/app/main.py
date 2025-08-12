@@ -193,14 +193,6 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     try:
         token = credentials.credentials
         
-        # Development mode: allow specific test tokens
-        if os.getenv("DEBUG", "false").lower() == "true":
-            if token in ["mock-jwt-token-for-testing", "dev-token"]:
-                return {
-                    "id": "frno10@gmail.com",
-                    "email": "frno10@gmail.com"
-                }
-        
         # Try Supabase JWT verification
         try:
             user_response = supabase.auth.get_user(token)
@@ -316,29 +308,7 @@ async def register(user_data: UserRegister):
             detail=f"Registration failed: {str(e)}"
         )
 
-@app.post("/api/v1/auth/dev-login", response_model=AuthResponse)
-async def dev_login():
-    """Development login endpoint that bypasses Supabase."""
-    if os.getenv("DEBUG", "false").lower() != "true":
-        raise HTTPException(status_code=404, detail="Not found")
-    
-    logger.info("[DEV-AUTH] Development login requested")
-    
-    user_response = UserResponse(
-        id="frno10@gmail.com",
-        email="frno10@gmail.com",
-        full_name="František Novák",
-        created_at=datetime.now().isoformat()
-    )
-    
-    auth_response = AuthResponse(
-        user=user_response,
-        access_token="dev-token",
-        token_type="bearer"
-    )
-    
-    logger.info("[DEV-AUTH] Development login successful")
-    return auth_response
+
 
 @app.post("/api/v1/auth/login", response_model=AuthResponse)
 async def login(user_data: UserLogin):
