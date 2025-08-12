@@ -50,12 +50,12 @@ interface ImportConfirmationProps {
   onBack: () => void
 }
 
-export function ImportConfirmation({ 
-  uploadId, 
-  transactionCount, 
-  onImportComplete, 
-  onError, 
-  onBack 
+export function ImportConfirmation({
+  uploadId,
+  transactionCount,
+  onImportComplete,
+  onError,
+  onBack
 }: ImportConfirmationProps) {
   const [loading, setLoading] = useState(false)
   const [analyzing, setAnalyzing] = useState(true)
@@ -75,7 +75,7 @@ export function ImportConfirmation({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          // Add auth headers here when authentication is implemented
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
         }
       })
 
@@ -86,13 +86,13 @@ export function ImportConfirmation({
 
       const result: DuplicateAnalysis = await response.json()
       setDuplicateAnalysis(result)
-      
+
       // Pre-select non-duplicate transactions
       const nonDuplicates = result.analysis
         .filter(item => !item.is_likely_duplicate)
         .map(item => item.transaction_index)
       setSelectedTransactions(nonDuplicates)
-      
+
     } catch (error) {
       onError(error instanceof Error ? error.message : 'Duplicate analysis failed')
     } finally {
@@ -114,7 +114,7 @@ export function ImportConfirmation({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          // Add auth headers here when authentication is implemented
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
         },
         body: JSON.stringify(request)
       })
@@ -134,8 +134,8 @@ export function ImportConfirmation({
   }
 
   const toggleTransaction = (index: number) => {
-    setSelectedTransactions(prev => 
-      prev.includes(index) 
+    setSelectedTransactions(prev =>
+      prev.includes(index)
         ? prev.filter(i => i !== index)
         : [...prev, index]
     )
@@ -229,8 +229,8 @@ export function ImportConfirmation({
                 </CardDescription>
               </div>
               <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="sm"
                   onClick={() => setSelectedTransactions(
                     duplicateAnalysis.analysis.map((_, index) => index)
@@ -238,8 +238,8 @@ export function ImportConfirmation({
                 >
                   Select All
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="sm"
                   onClick={() => setSelectedTransactions([])}
                 >
@@ -251,12 +251,12 @@ export function ImportConfirmation({
           <CardContent>
             <div className="space-y-2 max-h-96 overflow-y-auto">
               {duplicateAnalysis.analysis.map((item) => (
-                <div 
+                <div
                   key={item.transaction_index}
                   className={`
                     flex items-center gap-4 p-3 border rounded-lg cursor-pointer transition-colors
-                    ${selectedTransactions.includes(item.transaction_index) 
-                      ? 'bg-primary/5 border-primary' 
+                    ${selectedTransactions.includes(item.transaction_index)
+                      ? 'bg-primary/5 border-primary'
                       : 'hover:bg-muted/50'
                     }
                     ${item.is_likely_duplicate ? 'border-orange-200 bg-orange-50/50' : ''}
@@ -269,7 +269,7 @@ export function ImportConfirmation({
                     onChange={() => toggleTransaction(item.transaction_index)}
                     className="h-4 w-4"
                   />
-                  
+
                   <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-2">
                     <div>
                       <p className="text-sm font-medium">
@@ -285,9 +285,8 @@ export function ImportConfirmation({
                       </p>
                     </div>
                     <div>
-                      <p className={`text-sm font-medium ${
-                        item.transaction.amount < 0 ? 'text-destructive' : 'text-green-600'
-                      }`}>
+                      <p className={`text-sm font-medium ${item.transaction.amount < 0 ? 'text-destructive' : 'text-green-600'
+                        }`}>
                         {item.transaction.amount < 0 ? '-' : '+'}
                         {formatCurrency(item.transaction.amount)}
                       </p>
@@ -316,15 +315,15 @@ export function ImportConfirmation({
         <Button onClick={onBack} variant="outline">
           Back to Preview
         </Button>
-        
+
         <div className="flex gap-2">
           <Button onClick={analyzeDuplicates} variant="outline" disabled={analyzing}>
             <RefreshCw className={`h-4 w-4 mr-2 ${analyzing ? 'animate-spin' : ''}`} />
             Re-analyze
           </Button>
-          
-          <Button 
-            onClick={handleImport} 
+
+          <Button
+            onClick={handleImport}
             disabled={loading || selectedTransactions.length === 0}
           >
             {loading ? (

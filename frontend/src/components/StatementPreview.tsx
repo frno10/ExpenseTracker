@@ -43,7 +43,7 @@ export function StatementPreview({ uploadId, onPreviewComplete, onError, onBack 
   const loadPreview = async () => {
     setLoading(true)
     try {
-      const response = await fetch(`http://localhost:8000/api/statement-import/preview/${uploadId}`, {
+      const response = await fetch(`/api/statement-import/preview/${uploadId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

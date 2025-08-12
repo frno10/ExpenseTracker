@@ -16,7 +16,9 @@
 
 
 
-- [ ] 2. Enhance PDF parser with ČSOB-specific methods
+- [x] 2. Enhance PDF parser with ČSOB-specific methods
+
+
   - Update `_parse_csob_date` method to handle current year properly
   - Fix `_parse_csob_amount` method to handle comma decimal separator
   - Implement `_extract_csob_transactions` method for multi-line parsing

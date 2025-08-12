@@ -78,14 +78,9 @@ async def startup_event():
             logger.error("[STARTUP] Application startup failed - check Supabase connection")
             raise
             
-    elif settings.database_mode == "memory":
-        # In-memory storage mode
-        logger.info("[STARTUP] Using in-memory storage (development mode)")
-        logger.warning("[STARTUP] Data will not persist between restarts")
-        
     else:
         logger.error(f"[STARTUP] Invalid database mode: {settings.database_mode}")
-        logger.error("[STARTUP] Valid options: postgresql, supabase_rest, memory")
+        logger.error("[STARTUP] Valid options: postgresql, supabase_rest")
         raise ValueError(f"Invalid database mode: {settings.database_mode}")
 
 # Add CORS middleware
@@ -183,8 +178,7 @@ class CategoryResponse(BaseModel):
     total_expenses: float
     expense_count: int
 
-# Simple in-memory storage for development (per user)
-expenses_db = {}  # user_id -> {expense_id -> expense_data}
+# Categories for expense classification
 categories = ["Food", "Transportation", "Entertainment", "Utilities", "Healthcare", "Shopping", "Other"]
 
 # Auth dependency for Supabase JWT tokens
@@ -509,113 +503,170 @@ async def test_endpoint(current_user = Depends(get_current_user)):
 @app.post("/api/v1/expenses", response_model=ExpenseResponse)
 async def create_expense(expense: ExpenseCreate, current_user = Depends(get_current_user)):
     """Create a new expense."""
-    import uuid
-    
     user_id = current_user["id"]
-    expense_id = str(uuid.uuid4())
     now = datetime.now().isoformat()
     
-    # Initialize user expenses if not exists
-    if user_id not in expenses_db:
-        expenses_db[user_id] = {}
-    
     expense_data = {
-        "id": expense_id,
+        "user_id": user_id,
         "amount": expense.amount,
         "description": expense.description,
         "category": expense.category,
-        "date": expense.date or now.split("T")[0],
-        "created_at": now,
-        "user_id": user_id
+        "date": expense.date or now.split("T")[0]
     }
     
-    expenses_db[user_id][expense_id] = expense_data
-    return ExpenseResponse(**expense_data)
+    try:
+        result = supabase.table('expenses').insert(expense_data).execute()
+        if result.data and len(result.data) > 0:
+            created_expense = result.data[0]
+            return ExpenseResponse(
+                id=created_expense["id"],
+                amount=created_expense["amount"],
+                description=created_expense["description"],
+                category=created_expense["category"],
+                date=created_expense["date"],
+                created_at=created_expense["created_at"],
+                user_id=created_expense["user_id"]
+            )
+        else:
+            raise HTTPException(status_code=500, detail="Failed to create expense")
+    except Exception as e:
+        logger.error(f"Error creating expense: {e}")
+        raise HTTPException(status_code=500, detail="Failed to create expense")
 
 @app.get("/api/v1/expenses")
 async def get_expenses(current_user = Depends(get_current_user)):
     """Get all expenses for current user."""
     user_id = current_user["id"]
-    user_expenses = expenses_db.get(user_id, {})
-    return list(user_expenses.values())
+    
+    try:
+        result = supabase.table('expenses').select('*').eq('user_id', user_id).execute()
+        return result.data or []
+    except Exception as e:
+        logger.error(f"Error fetching expenses from Supabase: {e}")
+        return []
 
 @app.get("/api/v1/expenses/{expense_id}", response_model=ExpenseResponse)
 async def get_expense(expense_id: str, current_user = Depends(get_current_user)):
     """Get a specific expense."""
     user_id = current_user["id"]
-    user_expenses = expenses_db.get(user_id, {})
     
-    if expense_id not in user_expenses:
-        raise HTTPException(status_code=404, detail="Expense not found")
-    
-    return ExpenseResponse(**user_expenses[expense_id])
+    try:
+        result = supabase.table('expenses').select('*').eq('id', expense_id).eq('user_id', user_id).execute()
+        if result.data and len(result.data) > 0:
+            expense = result.data[0]
+            return ExpenseResponse(**expense)
+        else:
+            raise HTTPException(status_code=404, detail="Expense not found")
+    except Exception as e:
+        logger.error(f"Error fetching expense: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch expense")
 
 @app.put("/api/v1/expenses/{expense_id}", response_model=ExpenseResponse)
 async def update_expense(expense_id: str, expense: ExpenseCreate, current_user = Depends(get_current_user)):
     """Update an expense."""
     user_id = current_user["id"]
-    user_expenses = expenses_db.get(user_id, {})
     
-    if expense_id not in user_expenses:
-        raise HTTPException(status_code=404, detail="Expense not found")
-    
-    expense_data = user_expenses[expense_id]
-    expense_data.update({
-        "amount": expense.amount,
-        "description": expense.description,
-        "category": expense.category,
-        "date": expense.date or expense_data["date"]
-    })
-    
-    return ExpenseResponse(**expense_data)
+    try:
+        # First check if expense exists and belongs to user
+        existing = supabase.table('expenses').select('*').eq('id', expense_id).eq('user_id', user_id).execute()
+        if not existing.data or len(existing.data) == 0:
+            raise HTTPException(status_code=404, detail="Expense not found")
+        
+        # Update the expense
+        update_data = {
+            "amount": expense.amount,
+            "description": expense.description,
+            "category": expense.category,
+            "date": expense.date or existing.data[0]["date"]
+        }
+        
+        result = supabase.table('expenses').update(update_data).eq('id', expense_id).eq('user_id', user_id).execute()
+        if result.data and len(result.data) > 0:
+            updated_expense = result.data[0]
+            return ExpenseResponse(**updated_expense)
+        else:
+            raise HTTPException(status_code=500, detail="Failed to update expense")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating expense: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update expense")
 
 @app.delete("/api/v1/expenses/{expense_id}")
 async def delete_expense(expense_id: str, current_user = Depends(get_current_user)):
     """Delete an expense."""
     user_id = current_user["id"]
-    user_expenses = expenses_db.get(user_id, {})
     
-    if expense_id not in user_expenses:
-        raise HTTPException(status_code=404, detail="Expense not found")
-    
-    del user_expenses[expense_id]
-    return {"message": "Expense deleted successfully"}
+    try:
+        # First check if expense exists and belongs to user
+        existing = supabase.table('expenses').select('id').eq('id', expense_id).eq('user_id', user_id).execute()
+        if not existing.data or len(existing.data) == 0:
+            raise HTTPException(status_code=404, detail="Expense not found")
+        
+        # Delete the expense
+        result = supabase.table('expenses').delete().eq('id', expense_id).eq('user_id', user_id).execute()
+        return {"message": "Expense deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting expense: {e}")
+        raise HTTPException(status_code=500, detail="Failed to delete expense")
 
 # Category endpoints
 @app.get("/api/v1/categories")
 async def get_categories(current_user = Depends(get_current_user)):
     """Get all categories with expense summaries for current user."""
     user_id = current_user["id"]
-    user_expenses = expenses_db.get(user_id, {}).values()
-    category_summaries = []
     
-    for category in categories:
-        category_expenses = [exp for exp in user_expenses if exp["category"] == category]
-        total_amount = sum(exp["amount"] for exp in category_expenses)
+    try:
+        # Get all expenses for user
+        result = supabase.table('expenses').select('*').eq('user_id', user_id).execute()
+        user_expenses = result.data or []
         
-        category_summaries.append(CategoryResponse(
-            name=category,
-            total_expenses=total_amount,
-            expense_count=len(category_expenses)
-        ))
-    
-    return category_summaries
+        category_summaries = []
+        for category in categories:
+            category_expenses = [exp for exp in user_expenses if exp["category"] == category]
+            total_amount = sum(float(exp["amount"]) for exp in category_expenses)
+            
+            category_summaries.append(CategoryResponse(
+                name=category,
+                total_expenses=total_amount,
+                expense_count=len(category_expenses)
+            ))
+        
+        return category_summaries
+    except Exception as e:
+        logger.error(f"Error fetching categories: {e}")
+        return []
 
 @app.get("/api/v1/summary")
 async def get_summary(current_user = Depends(get_current_user)):
     """Get expense summary for current user."""
     user_id = current_user["id"]
-    user_expenses = list(expenses_db.get(user_id, {}).values())
     
-    total_expenses = len(user_expenses)
-    total_amount = sum(exp["amount"] for exp in user_expenses)
-    
-    return {
-        "total_expenses": total_expenses,
-        "total_amount": total_amount,
-        "categories_used": len(set(exp["category"] for exp in user_expenses)),
-        "recent_expenses": user_expenses[-5:]  # Last 5 expenses
-    }
+    try:
+        # Get all expenses for user
+        result = supabase.table('expenses').select('*').eq('user_id', user_id).order('created_at', desc=True).execute()
+        user_expenses = result.data or []
+        
+        total_expenses = len(user_expenses)
+        total_amount = sum(float(exp["amount"]) for exp in user_expenses)
+        categories_used = len(set(exp["category"] for exp in user_expenses)) if user_expenses else 0
+        
+        return {
+            "total_expenses": total_expenses,
+            "total_amount": total_amount,
+            "categories_used": categories_used,
+            "recent_expenses": user_expenses[:5]  # First 5 (most recent due to desc order)
+        }
+    except Exception as e:
+        logger.error(f"Error fetching summary: {e}")
+        return {
+            "total_expenses": 0,
+            "total_amount": 0,
+            "categories_used": 0,
+            "recent_expenses": []
+        }
 
 # Additional endpoints to prevent frontend errors
 @app.get("/api/budgets")
@@ -831,7 +882,12 @@ async def analyze_duplicates(upload_id: str, current_user = Depends(get_current_
         parse_result = parse_results[upload_id]
         
         # Simple duplicate analysis - check against existing expenses
-        user_expenses = list(expenses_db.get(current_user["id"], {}).values())
+        try:
+            result = supabase.table('expenses').select('*').eq('user_id', current_user["id"]).execute()
+            user_expenses = result.data or []
+        except Exception as e:
+            logger.error(f"Error fetching expenses for duplicate analysis: {e}")
+            user_expenses = []
         
         analysis = []
         for i, tx in enumerate(parse_result["transactions"]):
@@ -904,9 +960,6 @@ async def confirm_import(upload_id: str, request: dict, current_user = Depends(g
         
         # Import selected transactions as expenses
         user_id = current_user["id"]
-        if user_id not in expenses_db:
-            expenses_db[user_id] = {}
-        
         imported_count = 0
         skipped_count = 0
         errors = []
@@ -919,23 +972,21 @@ async def confirm_import(upload_id: str, request: dict, current_user = Depends(g
             
             try:
                 # Create expense from transaction
-                expense_id = str(uuid.uuid4())
                 expense_data = {
-                    "id": expense_id,
+                    "user_id": user_id,
                     "description": tx.description,
                     "amount": float(tx.amount),
                     "category": tx.category or "Other",
-                    "date": tx.date.isoformat()[:10],
-                    "merchant": tx.merchant or "",
-                    "account": tx.account or "Unknown",
-                    "user_id": user_id,
-                    "created_at": datetime.now().isoformat(),
-                    "updated_at": datetime.now().isoformat(),
-                    "statement_import_id": upload_id
+                    "date": tx.date.isoformat()[:10]
                 }
                 
-                expenses_db[user_id][expense_id] = expense_data
-                imported_count += 1
+                # Save to Supabase using REST API
+                result = supabase.table('expenses').insert(expense_data).execute()
+                if result.data:
+                    imported_count += 1
+                else:
+                    errors.append(f"Failed to save transaction {i} to Supabase")
+                    skipped_count += 1
                 
             except Exception as e:
                 errors.append(f"Failed to import transaction {i}: {str(e)}")
