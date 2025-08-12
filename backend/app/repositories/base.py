@@ -9,7 +9,13 @@ from sqlalchemy import select, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.core.observability_middleware import DatabaseObservabilityMixin
+try:
+    from app.core.observability_middleware import DatabaseObservabilityMixin
+except ImportError:
+    # Fallback when observability dependencies are not available
+    class DatabaseObservabilityMixin:
+        """Fallback mixin when observability is not available."""
+        pass
 from app.models.base import BaseTable
 
 ModelType = TypeVar("ModelType", bound=BaseTable)
