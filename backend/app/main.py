@@ -460,14 +460,7 @@ async def get_me(current_user = Depends(get_current_user)):
         created_at=datetime.now().isoformat()
     )
 
-@app.get("/api/v1/test")
-async def test_endpoint(current_user = Depends(get_current_user)):
-    """Test authenticated endpoint."""
-    return {
-        "message": "API test successful", 
-        "version": "1.0.0",
-        "user": current_user
-    }
+
 
 # Expense endpoints
 @app.post("/api/v1/expenses", response_model=ExpenseResponse)
@@ -638,36 +631,8 @@ async def get_summary(current_user = Depends(get_current_user)):
             "recent_expenses": []
         }
 
-# Additional endpoints to prevent frontend errors
-@app.get("/api/budgets")
-async def get_budgets(active_only: bool = False, current_user = Depends(get_current_user)):
-    """Get budgets (placeholder endpoint)."""
-    return []
-
-@app.get("/api/budgets/alerts")
-async def get_budget_alerts(current_user = Depends(get_current_user)):
-    """Get budget alerts (placeholder endpoint)."""
-    return []
-
-@app.get("/api/recurring-expenses")
-async def get_recurring_expenses(current_user = Depends(get_current_user)):
-    """Get recurring expenses (placeholder endpoint)."""
-    return []
-
-@app.get("/api/recurring-expenses/notifications")
-async def get_recurring_notifications(current_user = Depends(get_current_user)):
-    """Get recurring expense notifications (placeholder endpoint)."""
-    return []
-
-@app.get("/api/analytics/dashboard")
-async def get_analytics_dashboard(period_days: int = 30, current_user = Depends(get_current_user)):
-    """Get analytics dashboard data (placeholder endpoint)."""
-    return {
-        "total_expenses": 0,
-        "monthly_spending": 0,
-        "categories": [],
-        "trends": []
-    }
+# Note: Budgets, recurring expenses, and analytics endpoints removed
+# These features are not implemented yet and should return proper 404s
 
 # Statement Import endpoints with real PDF parsing functionality
 from fastapi import UploadFile, File, Form
@@ -824,13 +789,13 @@ async def preview_statement(upload_id: str, current_user = Depends(get_current_u
                 "metadata": result.metadata
             }
         else:
-            # For non-PDF files, return a placeholder for now
+            # Return error for unsupported file types
             return {
                 "upload_id": upload_id,
                 "success": False,
                 "transaction_count": 0,
                 "sample_transactions": [],
-                "errors": [f"Parser for {upload_info['file_type']} files not implemented yet"],
+                "errors": [f"File type '{upload_info['file_type']}' is not supported for parsing"],
                 "warnings": [],
                 "metadata": {"file_type": upload_info["file_type"]}
             }
