@@ -5,11 +5,66 @@ import time
 from typing import Callable, Optional
 
 from fastapi import Request, Response
-from opentelemetry import trace
+try:
+    from opentelemetry import trace
+    OPENTELEMETRY_AVAILABLE = True
+except ImportError:
+    OPENTELEMETRY_AVAILABLE = False
+    # Create mock trace module
+    class MockTrace:
+        @staticmethod
+        def get_current_span():
+            return MockSpan()
+        
+        @staticmethod
+        def get_tracer(name):
+            return MockTracer()
+        
+        class Status:
+            def __init__(self, status_code, message=""):
+                pass
+        
+        class StatusCode:
+            OK = "OK"
+            ERROR = "ERROR"
+    
+    class MockSpan:
+        def is_recording(self):
+            return False
+        
+        def set_attribute(self, key, value):
+            pass
+        
+        def set_status(self, status):
+            pass
+        
+        def record_exception(self, exception):
+            pass
+    
+    class MockTracer:
+        def start_span(self, name, attributes=None):
+            return MockSpan()
+    
+    trace = MockTrace()
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from app.core.logging_config import set_correlation_id, log_request
-from app.core.telemetry_simple import record_request_metrics, record_error_metrics
+try:
+    from app.core.logging_config import set_correlation_id, log_request
+except ImportError:
+    def set_correlation_id(correlation_id=None):
+        return correlation_id or "unknown"
+    
+    def log_request(method, path, status_code, duration_ms, user_id=None, user_agent=None, ip_address=None):
+        pass
+
+try:
+    from app.core.telemetry_simple import record_request_metrics, record_error_metrics
+except ImportError:
+    def record_request_metrics(method, endpoint, status_code, duration):
+        pass
+    
+    def record_error_metrics(error_type, endpoint):
+        pass
 
 
 class ObservabilityMiddleware(BaseHTTPMiddleware):
