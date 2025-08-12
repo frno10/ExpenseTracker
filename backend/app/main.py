@@ -19,9 +19,13 @@ import uuid
 
 # Import proper authentication system
 from app.core.auth import get_current_user as get_current_user_proper
-from app.core.database import get_db, init_db
 from app.core.config import settings
-from app.models import UserTable
+
+# Conditional imports based on database mode
+try:
+    from app.models import UserTable
+except ImportError:
+    UserTable = None
 
 # Load environment variables
 load_dotenv()
@@ -59,6 +63,7 @@ async def startup_event():
     if settings.database_mode == "postgresql":
         # Direct PostgreSQL connection with SQLAlchemy
         try:
+            from app.core.database import init_db
             await init_db()
             logger.info("[STARTUP] PostgreSQL database initialized successfully")
         except Exception as e:
