@@ -43,11 +43,11 @@ export function StatementPreview({ uploadId, onPreviewComplete, onError, onBack 
   const loadPreview = async () => {
     setLoading(true)
     try {
-      const response = await fetch(`/api/statement-import/preview/${uploadId}`, {
+      const response = await fetch(`http://localhost:8000/api/statement-import/preview/${uploadId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          // Add auth headers here when authentication is implemented
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
         }
       })
 

@@ -49,7 +49,7 @@ This will give you instructions to:
 
 ### 3. Configure Environment Variables
 
-The `.env` file should already be configured with your Supabase credentials:
+The backend `.env` file should already be configured with your Supabase credentials:
 
 ```env
 DATABASE_URL=postgresql+asyncpg://postgres:ExpenseTracker%2F56@db.nsvdbcqvyphyiktrvtkw.supabase.co:5432/postgres
@@ -58,6 +58,18 @@ SUPABASE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZi
 SECRET_KEY=dev-secret-key-change-in-production
 DEBUG=true
 ```
+
+For the frontend, you'll need a local development environment file. Create `frontend/.env.local`:
+
+```env
+VITE_API_URL=http://localhost:8000/api/v1
+VITE_SUPABASE_URL=https://nsvdbcqvyphyiktrvtkw.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5zdmRiY3F2eXBoeWlrdHJ2dGt3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM4ODUzMjUsImV4cCI6MjA2OTQ2MTMyNX0.Mg8xh_x3mXwetx1NU3AocQpV5TovYpl1uxlEHlxFG-s
+VITE_WS_URL=ws://localhost:8000/ws
+VITE_NODE_ENV=development
+```
+
+**Note:** The `.env.local` file is ignored by git and won't affect your production deployment.
 
 ### 4. Start the Backend Server
 
@@ -108,22 +120,29 @@ curl -X POST "http://localhost:8000/api/v1/auth/login" `
 - `GET /api/v1/categories` - Get categories with summaries
 - `GET /api/v1/summary` - Get expense summary
 
-## Frontend Setup (Optional)
+## Frontend Setup
 
-If you want to run the frontend:
+To run the frontend for local development:
 
 ```powershell
 # Navigate to frontend directory
 cd ..\frontend
 
-# Install dependencies
+# Install dependencies (if not already done)
 npm install
+
+# Ensure you have .env.local file for local development
+# (This should already exist with localhost:8000 API URL)
 
 # Start development server
 npm run dev
 ```
 
-The frontend will be available at http://localhost:3000
+The frontend will be available at **http://localhost:5173** (Vite dev server)
+
+**Environment Files:**
+- `.env` - Production configuration (don't modify)
+- `.env.local` - Local development configuration (points to localhost:8000)
 
 ## Development Workflow
 
@@ -131,7 +150,7 @@ The frontend will be available at http://localhost:3000
 
 1. **Backend Changes**: The server runs with `--reload` flag, so changes are automatically picked up
 2. **Database Changes**: Currently using in-memory storage for development
-3. **Environment Changes**: Restart the server after changing `.env` file
+3. **Environment Changes**: Restart the server after changing `.env` file (backend) or `.env.local` file (frontend)
 
 ### Testing
 
@@ -147,7 +166,7 @@ python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --log-level d
 
 1. **Import Errors**: Make sure you're in the `backend` directory and virtual environment is activated
 2. **Port Already in Use**: Kill existing processes or use a different port
-3. **Environment Variables**: Ensure `.env` file is in the `backend` directory
+3. **Environment Variables**: Ensure `.env` file is in the `backend` directory and `.env.local` is in the `frontend` directory
 
 ### Project Structure
 
@@ -183,6 +202,36 @@ You can view your Supabase project at: https://supabase.com/dashboard/project/ns
 3. **Frontend Integration**: Connect the React frontend to this API
 4. **Testing**: Add comprehensive test suite
 5. **Deployment**: Deploy to production environment
+
+## Environment Configuration
+
+### Frontend Environment Files
+
+The frontend uses different environment files for different scenarios:
+
+- **`.env`** - Production configuration (committed to git)
+- **`.env.local`** - Local development configuration (ignored by git)
+
+**For Local Development:**
+```bash
+cd frontend
+npm run dev  # Uses .env.local (localhost:8000)
+```
+
+**For Production Build:**
+```bash
+cd frontend
+npm run build  # Uses .env (production URLs)
+```
+
+**To Test Production Settings Locally:**
+```bash
+# Temporarily rename .env.local
+mv .env.local .env.local.backup
+npm run dev  # Now uses production .env
+# Restore when done
+mv .env.local.backup .env.local
+```
 
 ## Troubleshooting
 

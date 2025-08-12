@@ -437,3 +437,6 @@ grafana_data/
 *.sln
 *.sw?
 my-project-info.md
+backend/app/services/__pycache__/*
+backend/app/core/__pycache__/*
+backend/app/parsers/__pycache__/*

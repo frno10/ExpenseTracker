@@ -12,6 +12,10 @@ class Settings(BaseSettings):
     app_name: str = "Expense Tracker"
     debug: bool = False
     
+    # Database Mode Selection
+    # Options: "postgresql", "supabase_rest", "memory"
+    database_mode: str = "postgresql"
+    
     # Database
     database_url: str = "postgresql+asyncpg://expense_user:expense_pass@localhost:5432/expense_tracker"
     

@@ -164,6 +164,12 @@ class PDFParser(BaseParser):
                 if transactions:
                     result.metadata["extraction_method"] = "table"
             
+            # Try ČSOB-specific parsing if this looks like a ČSOB statement
+            if not transactions and self._is_csob_statement(text_content):
+                transactions = self._extract_csob_transactions(text_content)
+                if transactions:
+                    result.metadata["extraction_method"] = "csob_specific"
+            
             # Fallback to text pattern matching
             if not transactions:
                 transactions = await self._extract_from_text(text_content)
@@ -604,57 +610,174 @@ class PDFParser(BaseParser):
     
     # ČSOB Slovakia specific methods
     
-    def _parse_csob_date(self, date_str: str, default_year: int = 2025) -> Optional[date]:
-        """Parse ČSOB Slovakia date format (e.g., '2. 5.' -> May 2nd)."""
+    def _parse_csob_date(self, date_str: str, default_year: int = None) -> Optional[date]:
+        """Parse ČSOB Slovakia date format (e.g., '2. 5.' -> May 2nd).
+        
+        Args:
+            date_str: Date string in Slovak format like "2. 5."
+            default_year: Year to use, if None will use current year
+        """
         try:
+            # Use current year if no default provided
+            if default_year is None:
+                from datetime import datetime
+                default_year = datetime.now().year
+            
             # Handle Slovak format "2. 5." (day. month.)
             if re.match(r'^\d{1,2}\.\s*\d{1,2}\.$', date_str.strip()):
                 parts = date_str.replace('.', '').split()
                 if len(parts) == 2:
                     day, month = int(parts[0]), int(parts[1])
-                    return date(default_year, month, day)
+                    # Validate date components
+                    if 1 <= month <= 12 and 1 <= day <= 31:
+                        return date(default_year, month, day)
             return None
         except (ValueError, IndexError):
             return None
     
-    def _parse_csob_amount(self, amount_str: str) -> Optional[Decimal]:
-        """Parse ČSOB Slovakia amount format (e.g., '-12,90' or '1 300,54')."""
+    def _extract_year_from_csob_header(self, text_content: str) -> int:
+        """Extract year from ČSOB PDF header like 'Obdobie: 1. 3. 2023 - 31. 3. 2023'."""
         try:
-            # Remove spaces and replace comma with dot
-            cleaned = amount_str.replace(' ', '').replace(',', '.')
+            # Look for "Obdobie: 1. 3. 2023 - 31. 3. 2023" pattern
+            match = re.search(r'Obdobie:\s*\d{1,2}\.\s*\d{1,2}\.\s*(\d{4})', text_content)
+            if match:
+                return int(match.group(1))
+            
+            # Fallback: look for any 4-digit year in the first 1000 characters
+            match = re.search(r'\b(20\d{2})\b', text_content[:1000])
+            if match:
+                return int(match.group(1))
+                
+        except (ValueError, AttributeError):
+            pass
+        
+        # Default to current year if nothing found
+        from datetime import datetime
+        return datetime.now().year
+    
+    def _is_csob_statement(self, text_content: str) -> bool:
+        """Check if this looks like a ČSOB Slovakia statement."""
+        csob_indicators = [
+            'VÝPIS Z ÚČTU',
+            'ACCOUNT STATEMENT', 
+            'ČSOB',
+            'Československá obchodná banka',
+            'CEKOSKBX',  # BIC code
+            'Transakcia platobnou kartou',
+            'Ref. platiteľa:',
+            'Miesto:'
+        ]
+        
+        # Check if at least 3 indicators are present
+        found_indicators = sum(1 for indicator in csob_indicators if indicator in text_content)
+        return found_indicators >= 3
+    
+    def _parse_csob_amount(self, amount_str: str) -> Optional[Decimal]:
+        """Parse ČSOB Slovakia amount format (e.g., '-12,90' or '1 300,54').
+        
+        Handles:
+        - Comma as decimal separator: '12,90' -> 12.90
+        - Space as thousands separator: '1 300,54' -> 1300.54
+        - Negative amounts: '-12,90' -> -12.90
+        """
+        if not amount_str:
+            return None
+            
+        try:
+            # Clean the amount string
+            cleaned = amount_str.strip()
             
             # Handle negative amounts
             is_negative = cleaned.startswith('-')
             if is_negative:
                 cleaned = cleaned[1:]
             
+            # Remove spaces (thousands separator) and replace comma with dot
+            cleaned = cleaned.replace(' ', '').replace(',', '.')
+            
+            # Validate the cleaned string looks like a number
+            if not re.match(r'^\d+(\.\d+)?$', cleaned):
+                return None
+            
             amount = Decimal(cleaned)
             return -amount if is_negative else amount
+            
         except (ValueError, InvalidOperation):
+            self.logger.debug(f"Could not parse ČSOB amount: {amount_str}")
             return None
     
     def _split_csob_merchant_location(self, merchant_info: str) -> Tuple[Optional[str], Optional[str]]:
         """Split ČSOB merchant info into merchant name and location."""
-        # Slovak city patterns
+        if not merchant_info:
+            return None, None
+        
+        # Slovak city patterns - more comprehensive
         city_patterns = [
             r'\bKOSICE\b', r'\bBRATISLAVA\b', r'\bZILINA\b', r'\bPRESOV\b',
             r'\bNITRA\b', r'\bTRNAVA\b', r'\bBANSKA BYSTRICA\b',
-            r'\bKE\b', r'\bBA\b', r'\bZA\b', r'\bPO\b', r'\bNR\b', r'\bTT\b', r'\bBB\b'
+            r'\bKE\b', r'\bBA\b', r'\bZA\b', r'\bPO\b', r'\bNR\b', r'\bTT\b', r'\bBB\b',
+            r'\bLUXEMBOURG\b', r'\bPRAHA\b', r'\bBRNO\b'
         ]
         
-        merchant = merchant_info
+        merchant = merchant_info.strip()
         location = None
         
+        # Try to find location at the end of the string
         for pattern in city_patterns:
-            match = re.search(pattern, merchant_info, re.IGNORECASE)
+            match = re.search(pattern + r'\s*$', merchant_info, re.IGNORECASE)
             if match:
-                location = match.group(0)
+                location = match.group(0).strip()
                 # Remove location from merchant name
-                merchant = re.sub(pattern, '', merchant_info, flags=re.IGNORECASE).strip()
-                merchant = re.sub(r'\s+', ' ', merchant).strip()
+                merchant = re.sub(pattern + r'\s*$', '', merchant_info, flags=re.IGNORECASE).strip()
                 break
         
-        return merchant, location
+        # Clean up merchant name
+        if merchant:
+            # Remove extra spaces
+            merchant = re.sub(r'\s+', ' ', merchant).strip()
+            # Clean business suffixes but preserve the main name
+            merchant = self._clean_csob_business_name(merchant)
+        
+        return merchant if merchant else None, location
+    
+    def _clean_csob_business_name(self, merchant_name: str) -> str:
+        """Clean Slovak business names by removing common suffixes and formatting.
+        
+        Args:
+            merchant_name: Raw merchant name from ČSOB statement
+            
+        Returns:
+            Cleaned merchant name
+        """
+        if not merchant_name:
+            return merchant_name
+        
+        # Common Slovak business suffixes to clean up
+        suffixes_to_remove = [
+            r'\s+s\.r\.o\.$',  # s.r.o. (Slovak LLC)
+            r'\s+a\.s\.$',     # a.s. (Slovak joint stock company)
+            r'\s+spol\.\s+s\s+r\.o\.$',  # spol. s r.o.
+            r'\s+k\.s\.$',     # k.s. (limited partnership)
+            r'\s+v\.o\.s\.$',  # v.o.s. (general partnership)
+            r'\s+INC\.?$',     # INC. or INC
+            r'\s+LLC$',        # LLC
+            r'\s+LTD$',        # LTD
+            r'\s+CORP$',       # CORP
+        ]
+        
+        cleaned = merchant_name.strip()
+        
+        # Remove business suffixes
+        for suffix_pattern in suffixes_to_remove:
+            cleaned = re.sub(suffix_pattern, '', cleaned, flags=re.IGNORECASE)
+        
+        # Clean up extra spaces and formatting
+        cleaned = re.sub(r'\s+', ' ', cleaned).strip()
+        
+        # Remove trailing punctuation
+        cleaned = cleaned.rstrip('.,;:')
+        
+        return cleaned
     
     def _parse_csob_exchange_info(self, line: str) -> Optional[Tuple[Decimal, str, Optional[Decimal]]]:
         """Parse ČSOB exchange rate info from lines like 'Suma: 4.83 PLN 02.05.2025 Kurz: 4,2'."""
@@ -720,12 +843,17 @@ class PDFParser(BaseParser):
         for pattern, replacement in business_cleanups:
             cleaned = re.sub(pattern, replacement, cleaned, flags=re.IGNORECASE)
         
-        return cleaned.strip()
+        # Clean up extra spaces and return
+        cleaned = re.sub(r'\s+', ' ', cleaned).strip()
+        return cleaned
     
     def _extract_csob_transactions(self, text_content: str) -> List[ParsedTransaction]:
         """Extract transactions from ČSOB Slovakia PDF text."""
         transactions = []
         lines = text_content.split('\n')
+        
+        # Extract the year from the PDF header
+        statement_year = self._extract_year_from_csob_header(text_content)
         
         i = 0
         while i < len(lines):
@@ -735,7 +863,7 @@ class PDFParser(BaseParser):
             date_match = re.match(r'^(\d{1,2})\. (\d{1,2})\. (.+)', line)
             if date_match:
                 try:
-                    tx = self._parse_csob_transaction_block(date_match, lines, i)
+                    tx = self._parse_csob_transaction_block(date_match, lines, i, statement_year)
                     if tx:
                         transactions.append(tx)
                 except Exception as e:
@@ -745,7 +873,7 @@ class PDFParser(BaseParser):
         
         return transactions
     
-    def _parse_csob_transaction_block(self, date_match, lines: List[str], start_idx: int) -> Optional[ParsedTransaction]:
+    def _parse_csob_transaction_block(self, date_match, lines: List[str], start_idx: int, statement_year: int) -> Optional[ParsedTransaction]:
         """Parse a single ČSOB transaction block."""
         day = int(date_match.group(1))
         month = int(date_match.group(2))
@@ -812,8 +940,8 @@ class PDFParser(BaseParser):
         if amount is None:
             return None
         
-        # Create date string (assuming 2025)
-        transaction_date = date(2025, month, day)
+        # Create date with extracted year from PDF header
+        transaction_date = date(statement_year, month, day)
         
         return ParsedTransaction(
             date=transaction_date,
@@ -878,3 +1006,202 @@ class PDFParser(BaseParser):
             category=self._categorize_transaction_by_merchant(merchant or description),
             raw_data={'location': location} if location else None
         )
+    
+    def _extract_csob_transactions(self, text_content: str) -> List[ParsedTransaction]:
+        """Extract transactions from ČSOB Slovakia PDF using specific patterns.
+        
+        This method handles the multi-line transaction format used by ČSOB Slovakia:
+        - Main transaction line: "1. 3. Transakcia platobnou kartou -2,04"
+        - Reference line: "Ref. platiteľa: 123456789"
+        - Location line: "Miesto: ALIEXPRESS.COM LUXEMBOURG"
+        - Exchange info: "Suma: 2.13 USD 01.03.2023 Kurz: 1,0423"
+        """
+        transactions = []
+        
+        # Extract year from the PDF header
+        statement_year = self._extract_year_from_csob_header(text_content)
+        self.logger.debug(f"Extracted statement year: {statement_year}")
+        
+        lines = text_content.split('\n')
+        i = 0
+        
+        while i < len(lines):
+            line = lines[i].strip()
+            
+            # Look for transaction date pattern: "1. 3." (day. month.)
+            date_match = re.match(r'^(\d{1,2})\.\s*(\d{1,2})\.\s*(.*)$', line)
+            if date_match:
+                try:
+                    transaction = self._parse_csob_transaction_block(date_match, lines, i, statement_year)
+                    if transaction:
+                        transactions.append(transaction)
+                        self.logger.debug(f"Parsed ČSOB transaction: {transaction.date} - {transaction.description} - {transaction.amount}")
+                except Exception as e:
+                    self.logger.warning(f"Error parsing ČSOB transaction at line {i}: {e}")
+            
+            i += 1
+        
+        self.logger.info(f"Extracted {len(transactions)} ČSOB transactions")
+        return transactions
+    
+    def _parse_csob_transaction_block(self, date_match, lines: List[str], start_index: int, year: int) -> Optional[ParsedTransaction]:
+        """Parse a ČSOB transaction block starting from the main transaction line."""
+        try:
+            day = int(date_match.group(1))
+            month = int(date_match.group(2))
+            main_line = date_match.group(3).strip()
+            
+            # Parse the main transaction line for description and amount
+            # Format: "Transakcia platobnou kartou -2,04"
+            amount_match = re.search(r'(-?\d+(?:[,\.]\d+)?)\s*$', main_line)
+            if not amount_match:
+                return None
+            
+            amount_str = amount_match.group(1)
+            amount = self._parse_csob_amount(amount_str)
+            if amount is None:
+                return None
+            
+            # Extract description (everything before the amount)
+            description = main_line[:amount_match.start()].strip()
+            
+            # Create transaction date
+            transaction_date = date(year, month, day)
+            
+            # Look for additional info in following lines
+            merchant = None
+            reference = None
+            i = start_index + 1
+            
+            # Check next few lines for merchant and reference info
+            while i < len(lines) and i < start_index + 4:
+                line = lines[i].strip()
+                
+                # Stop if we hit another transaction (starts with date pattern)
+                if re.match(r'^\d{1,2}\.\s*\d{1,2}\.', line):
+                    break
+                
+                # Extract merchant from "Miesto:" line
+                if line.startswith('Miesto:'):
+                    merchant_info = line[7:].strip()  # Remove "Miesto: "
+                    merchant, _ = self._split_csob_merchant_location(merchant_info)
+                    if merchant:
+                        merchant = self._clean_csob_business_name(merchant)
+                
+                # Extract reference from "Ref. platiteľa:" line
+                elif line.startswith('Ref. platiteľa:'):
+                    reference = line[16:].strip()  # Remove "Ref. platiteľa: "
+                
+                i += 1
+            
+            # Auto-categorize based on description and merchant
+            temp_transaction = ParsedTransaction(
+                date=transaction_date,
+                description=description,
+                amount=amount,
+                merchant=merchant
+            )
+            category = self._categorize_transaction(temp_transaction)
+            
+            return ParsedTransaction(
+                date=transaction_date,
+                description=description,
+                amount=amount,
+                merchant=merchant,
+                category=category,
+                reference=reference,
+                raw_data={
+                    "line_number": start_index + 1,
+                    "raw_line": lines[start_index],
+                    "extraction_method": "csob_specific"
+                }
+            )
+            
+        except Exception as e:
+            self.logger.debug(f"Error parsing ČSOB transaction block: {e}")
+            return None
+    
+    def _is_csob_statement(self, text_content: str) -> bool:
+        """Check if this looks like a ČSOB Slovakia statement."""
+        csob_indicators = [
+            'VÝPIS Z ÚČTU',
+            'ACCOUNT STATEMENT', 
+            'ČSOB',
+            'Československá obchodná banka',
+            'CEKOSKBX',  # BIC code
+            'Transakcia platobnou kartou',
+            'Ref. platiteľa:',
+            'Miesto:'
+        ]
+        
+        # Check if at least 3 indicators are present
+        found_indicators = sum(1 for indicator in csob_indicators if indicator in text_content)
+        is_csob = found_indicators >= 3
+        
+        self.logger.debug(f"ČSOB statement detection: {found_indicators}/8 indicators found, is_csob={is_csob}")
+        return is_csob
+    
+    def _extract_year_from_csob_header(self, text_content: str) -> int:
+        """Extract year from ČSOB PDF header like 'Obdobie: 1. 3. 2023 - 31. 3. 2023'."""
+        try:
+            # Look for "Obdobie: 1. 3. 2023 - 31. 3. 2023" pattern
+            match = re.search(r'Obdobie:\s*\d{1,2}\.\s*\d{1,2}\.\s*(\d{4})', text_content)
+            if match:
+                year = int(match.group(1))
+                self.logger.debug(f"Found year in Obdobie header: {year}")
+                return year
+            
+            # Fallback: look for any 4-digit year in the first 1000 characters
+            match = re.search(r'\b(20\d{2})\b', text_content[:1000])
+            if match:
+                year = int(match.group(1))
+                self.logger.debug(f"Found year in header fallback: {year}")
+                return year
+                
+        except (ValueError, AttributeError) as e:
+            self.logger.debug(f"Error extracting year from header: {e}")
+        
+        # Default to current year if nothing found
+        from datetime import datetime
+        current_year = datetime.now().year
+        self.logger.debug(f"Using current year as fallback: {current_year}")
+        return current_year
+    
+    def _clean_csob_business_name(self, merchant_name: str) -> str:
+        """Clean Slovak business names by removing common suffixes and formatting.
+        
+        Args:
+            merchant_name: Raw merchant name from ČSOB statement
+            
+        Returns:
+            Cleaned merchant name
+        """
+        if not merchant_name:
+            return merchant_name
+        
+        # Common Slovak business suffixes to clean up
+        suffixes_to_remove = [
+            r'\s+s\.r\.o\.$',  # s.r.o. (Slovak LLC)
+            r'\s+a\.s\.$',     # a.s. (Slovak joint stock company)
+            r'\s+spol\.\s+s\s+r\.o\.$',  # spol. s r.o.
+            r'\s+k\.s\.$',     # k.s. (limited partnership)
+            r'\s+v\.o\.s\.$',  # v.o.s. (general partnership)
+            r'\s+INC\.?$',     # INC. or INC
+            r'\s+LLC$',        # LLC
+            r'\s+LTD$',        # LTD
+            r'\s+CORP$',       # CORP
+        ]
+        
+        cleaned = merchant_name.strip()
+        
+        # Remove business suffixes
+        for suffix_pattern in suffixes_to_remove:
+            cleaned = re.sub(suffix_pattern, '', cleaned, flags=re.IGNORECASE)
+        
+        # Clean up extra spaces and formatting
+        cleaned = re.sub(r'\s+', ' ', cleaned).strip()
+        
+        # Remove trailing punctuation
+        cleaned = cleaned.rstrip('.,;:')
+        
+        return cleaned

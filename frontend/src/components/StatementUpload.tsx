@@ -45,11 +45,11 @@ export function StatementUpload({ onUploadComplete, onError }: StatementUploadPr
         setUploadProgress(prev => Math.min(prev + 10, 90))
       }, 200)
 
-      const response = await fetch('/api/statement-import/upload', {
+      const response = await fetch('http://localhost:8000/api/statement-import/upload', {
         method: 'POST',
         body: formData,
         headers: {
-          // Add auth headers here when authentication is implemented
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
         }
       })
 
@@ -133,7 +133,7 @@ export function StatementUpload({ onUploadComplete, onError }: StatementUploadPr
           `}
         >
           <input {...getInputProps()} />
-          
+
           {uploading ? (
             <div className="space-y-4">
               <div className="animate-spin mx-auto h-8 w-8 border-2 border-primary border-t-transparent rounded-full" />
