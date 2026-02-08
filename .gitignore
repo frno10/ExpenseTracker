@@ -203,6 +203,13 @@ typings/
 .env.test.local
 .env.production.local
 
+# Backend environment files
+backend/.env.local
+backend/.env.local.*
+backend/.env.development
+backend/.env.production
+backend/.env.backup.*
+
 # parcel-bundler cache
 .cache
 .parcel-cache

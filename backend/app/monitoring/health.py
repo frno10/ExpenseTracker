@@ -7,8 +7,23 @@ from enum import Enum
 from dataclasses import dataclass
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
-import redis.asyncio as redis
-import httpx
+try:
+    import redis.asyncio as redis
+    REDIS_AVAILABLE = True
+except ImportError:
+    REDIS_AVAILABLE = False
+
+try:
+    import httpx
+    HTTPX_AVAILABLE = True
+except ImportError:
+    HTTPX_AVAILABLE = False
+
+try:
+    import psutil
+    PSUTIL_AVAILABLE = True
+except ImportError:
+    PSUTIL_AVAILABLE = False
 
 from ..core.database import get_db
 from ..core.config import settings
@@ -47,10 +62,19 @@ class HealthChecker:
     def setup_default_checks(self):
         """Set up default health checks."""
         self.register_check("database", self.check_database)
-        self.register_check("redis", self.check_redis)
+        
+        # Only register checks for available dependencies
+        if REDIS_AVAILABLE:
+            self.register_check("redis", self.check_redis)
+        
         self.register_check("disk_space", self.check_disk_space)
-        self.register_check("memory", self.check_memory)
-        self.register_check("external_apis", self.check_external_apis)
+        
+        if PSUTIL_AVAILABLE:
+            self.register_check("memory", self.check_memory)
+        
+        if HTTPX_AVAILABLE:
+            self.register_check("external_apis", self.check_external_apis)
+        
         self.register_check("parser_health", self.check_parser_health)
     
     def register_check(self, name: str, check_func):
@@ -141,7 +165,7 @@ class HealthChecker:
             "status": overall_status.value,
             "timestamp": datetime.utcnow().isoformat(),
             "version": "1.0.0",
-            "environment": settings.ENVIRONMENT,
+            "environment": getattr(settings, 'ENVIRONMENT', 'development'),
             "uptime_seconds": self.get_uptime(),
             "average_response_time_ms": round(avg_response_time, 2),
             "checks": {name: {
@@ -163,46 +187,122 @@ class HealthChecker:
     async def check_database(self) -> HealthCheckResult:
         """Check database connectivity and performance."""
         try:
-            async for db in get_db():
-                start_time = time.time()
-                
-                # Test basic connectivity
-                await db.execute(text("SELECT 1"))
-                
-                # Test table access
-                await db.execute(text("SELECT COUNT(*) FROM users LIMIT 1"))
-                
-                query_time = (time.time() - start_time) * 1000
-                
-                if query_time > 1000:  # > 1 second
-                    return HealthCheckResult(
-                        name="database",
-                        status=HealthStatus.DEGRADED,
-                        response_time_ms=0,
-                        message=f"Database responding slowly ({query_time:.2f}ms)",
-                        details={"query_time_ms": query_time}
-                    )
-                
+            from ..core.database import get_connection_info, test_connection, engine, AsyncSessionLocal
+            
+            # Get connection information
+            conn_info = get_connection_info()
+            
+            # Check if database is initialized
+            if engine is None:
                 return HealthCheckResult(
                     name="database",
-                    status=HealthStatus.HEALTHY,
+                    status=HealthStatus.UNHEALTHY,
                     response_time_ms=0,
-                    message="Database connection healthy",
-                    details={"query_time_ms": query_time}
+                    message="Database engine not initialized - call initialize_database() first",
+                    details={
+                        **conn_info,
+                        "engine_initialized": False,
+                        "session_factory_initialized": AsyncSessionLocal is not None
+                    }
+                )
+            
+            start_time = time.time()
+            
+            # Test connection using our enhanced test function
+            await test_connection(engine)
+            
+            # Test database session if session factory is available
+            if AsyncSessionLocal is not None:
+                async for db in get_db():
+                    # Test basic connectivity
+                    await db.execute(text("SELECT 1"))
+                    
+                    # Test table access (handle case where tables might not exist yet)
+                    try:
+                        result = await db.execute(text("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public'"))
+                        table_count = (await result.fetchone())[0]
+                    except Exception:
+                        table_count = 0
+                    
+                    query_time = (time.time() - start_time) * 1000
+                    
+                    details = {
+                        **conn_info,
+                        "query_time_ms": round(query_time, 2),
+                        "table_count": table_count,
+                        "engine_initialized": True,
+                        "session_factory_initialized": True
+                    }
+                    
+                    if query_time > 1000:  # > 1 second
+                        return HealthCheckResult(
+                            name="database",
+                            status=HealthStatus.DEGRADED,
+                            response_time_ms=0,
+                            message=f"Database responding slowly ({query_time:.2f}ms)",
+                            details=details
+                        )
+                    
+                    return HealthCheckResult(
+                        name="database",
+                        status=HealthStatus.HEALTHY,
+                        response_time_ms=0,
+                        message="Database connection healthy",
+                        details=details
+                    )
+            else:
+                # Engine exists but session factory not initialized
+                query_time = (time.time() - start_time) * 1000
+                return HealthCheckResult(
+                    name="database",
+                    status=HealthStatus.DEGRADED,
+                    response_time_ms=0,
+                    message="Database engine available but session factory not initialized",
+                    details={
+                        **conn_info,
+                        "query_time_ms": round(query_time, 2),
+                        "engine_initialized": True,
+                        "session_factory_initialized": False
+                    }
                 )
                 
         except Exception as e:
+            from ..core.database import get_connection_info
+            
             return HealthCheckResult(
                 name="database",
                 status=HealthStatus.UNHEALTHY,
                 response_time_ms=0,
-                message=f"Database connection failed: {str(e)}"
+                message=f"Database connection failed: {str(e)}",
+                details={
+                    **get_connection_info(),
+                    "error": str(e),
+                    "error_type": type(e).__name__,
+                    "engine_initialized": False
+                }
             )
     
     async def check_redis(self) -> HealthCheckResult:
         """Check Redis connectivity and performance."""
+        if not REDIS_AVAILABLE:
+            return HealthCheckResult(
+                name="redis",
+                status=HealthStatus.UNHEALTHY,
+                response_time_ms=0,
+                message="Redis client not available"
+            )
+        
         try:
-            redis_client = redis.from_url(settings.REDIS_URL)
+            redis_url = getattr(settings, 'REDIS_URL', None)
+            if not redis_url:
+                return HealthCheckResult(
+                    name="redis",
+                    status=HealthStatus.UNHEALTHY,
+                    response_time_ms=0,
+                    message="Redis URL not configured"
+                )
+            
+            redis_client = redis.from_url(redis_url)
             
             start_time = time.time()
             
@@ -288,8 +388,15 @@ class HealthChecker:
     
     async def check_memory(self) -> HealthCheckResult:
         """Check memory usage."""
+        if not PSUTIL_AVAILABLE:
+            return HealthCheckResult(
+                name="memory",
+                status=HealthStatus.UNHEALTHY,
+                response_time_ms=0,
+                message="psutil not available"
+            )
+        
         try:
-            import psutil
             
             memory = psutil.virtual_memory()
             used_percent = memory.percent
@@ -328,6 +435,14 @@ class HealthChecker:
     
     async def check_external_apis(self) -> HealthCheckResult:
         """Check external API dependencies."""
+        if not HTTPX_AVAILABLE:
+            return HealthCheckResult(
+                name="external_apis",
+                status=HealthStatus.UNHEALTHY,
+                response_time_ms=0,
+                message="httpx not available"
+            )
+        
         try:
             # This would check any external APIs the app depends on
             # For now, we'll just check if we can make HTTP requests

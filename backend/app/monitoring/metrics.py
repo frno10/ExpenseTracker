@@ -9,7 +9,11 @@ from enum import Enum
 import json
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text, func, select
-import redis.asyncio as redis
+try:
+    import redis.asyncio as redis
+    REDIS_AVAILABLE = True
+except ImportError:
+    REDIS_AVAILABLE = False
 
 from ..core.database import get_db
 from ..core.config import settings
@@ -67,10 +71,15 @@ class MetricsCollector:
     
     async def initialize(self):
         """Initialize the metrics collector."""
-        try:
-            self.redis_client = redis.from_url(settings.REDIS_URL)
-            await self.redis_client.ping()
-        except Exception:
+        if REDIS_AVAILABLE:
+            try:
+                redis_url = getattr(settings, 'redis_url', None)
+                if redis_url:
+                    self.redis_client = redis.from_url(redis_url)
+                    await self.redis_client.ping()
+            except Exception:
+                self.redis_client = None
+        else:
             self.redis_client = None
         
         # Start background collection tasks
@@ -348,7 +357,7 @@ class MetricsCollector:
             task.cancel()
         
         # Close Redis connection
-        if self.redis_client:
+        if self.redis_client and REDIS_AVAILABLE:
             await self.redis_client.close()
 
 

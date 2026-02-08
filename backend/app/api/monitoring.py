@@ -1,20 +1,29 @@
 """Monitoring and alerting API endpoints."""
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timedelta
+from enum import Enum
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
+
+
+class DashboardTimeRange(str, Enum):
+    """Time range options for dashboard."""
+    LAST_HOUR = "1h"
+    LAST_24_HOURS = "24h"
+    LAST_7_DAYS = "7d"
+    LAST_30_DAYS = "30d"
 
 from ..core.auth import get_current_user, require_admin
 from ..models.user import UserTable
 from ..monitoring.health import health_checker, HealthStatus
 from ..monitoring.metrics import metrics_collector
 from ..monitoring.alerts import alert_manager, AlertSeverity, AlertStatus
-from ..monitoring.dashboard import MonitoringDashboard, DashboardTimeRange
+from ..monitoring.dashboard import MonitoringDashboard
 
 router = APIRouter(prefix="/monitoring", tags=["monitoring"])
 
 # Initialize dashboard
-dashboard = MonitoringDashboard(health_checker, metrics_collector, alert_manager)
+dashboard = MonitoringDashboard()
 
 
 class HealthCheckResponse(BaseModel):

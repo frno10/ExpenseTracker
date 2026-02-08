@@ -21,6 +21,9 @@ import uuid
 from app.core.auth import get_current_user as get_current_user_proper
 from app.core.config import settings
 
+# Import monitoring API
+from app.api.monitoring import router as monitoring_router
+
 # Conditional imports based on database mode
 try:
     from app.models import UserTable
@@ -53,6 +56,9 @@ app = FastAPI(
     version="1.0.0",
 )
 
+# Include monitoring API router
+app.include_router(monitoring_router, prefix="/api/v1/monitoring", tags=["monitoring"])
+
 @app.on_event("startup")
 async def startup_event():
     """Initialize database on startup."""
@@ -60,12 +66,22 @@ async def startup_event():
     
     logger.info(f"[STARTUP] Database mode: {settings.database_mode}")
     
+    # Log configuration summary
+    settings.log_config_summary()
+    
     if settings.database_mode == "postgresql":
-        # Direct PostgreSQL connection with SQLAlchemy
+        # Direct PostgreSQL connection with SQLAlchemy using our enhanced database management
         try:
-            from app.core.database import init_db
+            from app.core.database import initialize_database, init_db
+            
+            # Initialize database connection with retry logic
+            await initialize_database()
+            logger.info("[STARTUP] Database connection initialized successfully")
+            
+            # Create database tables
             await init_db()
-            logger.info("[STARTUP] PostgreSQL database initialized successfully")
+            logger.info("[STARTUP] PostgreSQL database tables initialized successfully")
+            
         except Exception as e:
             logger.error(f"[STARTUP] PostgreSQL initialization failed: {e}")
             logger.error("[STARTUP] Application startup failed - check database connection")
@@ -74,6 +90,10 @@ async def startup_event():
     elif settings.database_mode == "supabase_rest":
         # Supabase REST API mode
         logger.info("[STARTUP] Using Supabase REST API for database operations")
+        if supabase is None:
+            logger.error("[STARTUP] Supabase client not available - check SUPABASE_URL and SUPABASE_KEY")
+            raise ValueError("Supabase client not initialized but required for supabase_rest mode")
+        
         try:
             # Test Supabase connection
             test_response = supabase.table('users').select('id').limit(1).execute()
@@ -87,6 +107,24 @@ async def startup_event():
         logger.error(f"[STARTUP] Invalid database mode: {settings.database_mode}")
         logger.error("[STARTUP] Valid options: postgresql, supabase_rest")
         raise ValueError(f"Invalid database mode: {settings.database_mode}")
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Clean up resources on shutdown."""
+    from app.core.config import settings
+    
+    logger.info("[SHUTDOWN] Application shutting down...")
+    
+    if settings.database_mode == "postgresql":
+        try:
+            from app.core.database import close_db
+            await close_db()
+            logger.info("[SHUTDOWN] Database connections closed successfully")
+        except Exception as e:
+            logger.error(f"[SHUTDOWN] Error closing database connections: {e}")
+    
+    logger.info("[SHUTDOWN] Application shutdown completed")
 
 # Add CORS middleware
 app.add_middleware(
@@ -130,10 +168,29 @@ logger.info(f"[STARTUP] CORS enabled for: localhost:3000, localhost:5173 (and 12
 logger.info(f"[STARTUP] Supabase URL: {os.getenv('SUPABASE_URL')}")
 logger.info(f"[STARTUP] Supabase Key configured: {bool(os.getenv('SUPABASE_KEY'))}")
 
-# Supabase client
+# Supabase client (only create if we have the required config)
 supabase_url = os.getenv("SUPABASE_URL")
 supabase_key = os.getenv("SUPABASE_KEY")
-supabase: Client = create_client(supabase_url, supabase_key)
+
+logger.info("🔧 [STARTUP] Authentication Configuration:")
+logger.info(f"🔧 [STARTUP] Database Mode: {settings.database_mode}")
+logger.info(f"🔧 [STARTUP] Supabase URL: {supabase_url}")
+logger.info(f"🔧 [STARTUP] Supabase Key configured: {bool(supabase_key)}")
+
+if supabase_url and supabase_key:
+    try:
+        supabase: Client = create_client(supabase_url, supabase_key)
+        logger.info("🔧 [STARTUP] ✅ Supabase client created successfully")
+    except Exception as e:
+        logger.error(f"🔧 [STARTUP] ❌ Failed to create Supabase client: {e}")
+        supabase = None
+else:
+    supabase = None
+    logger.warning("🔧 [STARTUP] ⚠️ Supabase client not initialized - missing URL or key")
+    if not supabase_url:
+        logger.warning("🔧 [STARTUP] Missing SUPABASE_URL environment variable")
+    if not supabase_key:
+        logger.warning("🔧 [STARTUP] Missing SUPABASE_KEY environment variable")
 
 # Security
 security = HTTPBearer(auto_error=False)
@@ -189,7 +246,13 @@ categories = ["Food", "Transportation", "Entertainment", "Utilities", "Healthcar
 # Auth dependency for Supabase JWT tokens
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
     """Get current user from Supabase JWT token."""
+    logger.info("🔐 [AUTH] Authentication attempt started")
+    logger.info(f"🔐 [AUTH] Supabase URL: {supabase_url}")
+    logger.info(f"🔐 [AUTH] Supabase client available: {supabase is not None}")
+    logger.info(f"🔐 [AUTH] Database mode: {settings.database_mode}")
+    
     if not credentials:
+        logger.warning("🔐 [AUTH] No credentials provided")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated"
@@ -197,29 +260,55 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     
     try:
         token = credentials.credentials
+        logger.info(f"🔐 [AUTH] Token received (length: {len(token)})")
+        logger.info(f"🔐 [AUTH] Token preview: {token[:20]}...")
+        
+        # Check if Supabase client is available
+        if supabase is None:
+            logger.error("🔐 [AUTH] Supabase client is None - cannot authenticate")
+            logger.error(f"🔐 [AUTH] SUPABASE_URL: {supabase_url}")
+            logger.error(f"🔐 [AUTH] SUPABASE_KEY configured: {bool(supabase_key)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Authentication service unavailable"
+            )
         
         # Try Supabase JWT verification
+        logger.info("🔐 [AUTH] Attempting Supabase JWT verification...")
         try:
             user_response = supabase.auth.get_user(token)
-            if user_response.user:
+            logger.info(f"🔐 [AUTH] Supabase response received: {bool(user_response)}")
+            logger.info(f"🔐 [AUTH] User object present: {bool(user_response.user if user_response else False)}")
+            
+            if user_response and user_response.user:
+                logger.info(f"🔐 [AUTH] ✅ Supabase authentication successful for user: {user_response.user.email}")
                 return {
                     "id": user_response.user.id,
                     "email": user_response.user.email
                 }
+            else:
+                logger.warning("🔐 [AUTH] Supabase returned no user object")
         except Exception as supabase_error:
-            logger.debug(f"Supabase token verification failed: {supabase_error}")
+            logger.warning(f"🔐 [AUTH] Supabase token verification failed: {type(supabase_error).__name__}: {supabase_error}")
         
         # Try manual JWT decoding as fallback
+        logger.info("🔐 [AUTH] Attempting manual JWT decoding as fallback...")
         try:
             payload = jwt.decode(token, supabase_key, algorithms=["HS256"], options={"verify_signature": False})
             user_id = payload.get("sub")
             email = payload.get("email")
             
+            logger.info(f"🔐 [AUTH] JWT payload decoded - user_id: {bool(user_id)}, email: {bool(email)}")
+            
             if user_id and email:
+                logger.info(f"🔐 [AUTH] ✅ Manual JWT authentication successful for user: {email}")
                 return {"id": user_id, "email": email}
+            else:
+                logger.warning("🔐 [AUTH] JWT payload missing required fields")
         except Exception as jwt_error:
-            logger.debug(f"Manual JWT decoding failed: {jwt_error}")
+            logger.warning(f"🔐 [AUTH] Manual JWT decoding failed: {type(jwt_error).__name__}: {jwt_error}")
         
+        logger.error("🔐 [AUTH] ❌ All authentication methods failed")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token"
@@ -228,10 +317,10 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     except HTTPException:
         raise
     except Exception as e:
-        logger.debug(f"Token verification failed: {e}")
+        logger.error(f"🔐 [AUTH] ❌ Unexpected authentication error: {type(e).__name__}: {e}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token"
+            detail="Authentication failed"
         )
 
 # Routes
@@ -242,20 +331,46 @@ async def root():
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint."""
-    return {"status": "healthy", "message": "API is operational"}
+    """Simple health check endpoint for load balancers."""
+    try:
+        from app.monitoring.health import health_checker
+        
+        # Run a quick database health check
+        db_result = await health_checker.run_check("database")
+        
+        if db_result.status.value == "healthy":
+            return {"status": "healthy", "message": "API is operational"}
+        elif db_result.status.value == "degraded":
+            return {"status": "degraded", "message": "API is operational but degraded"}
+        else:
+            return {"status": "unhealthy", "message": "API has health issues"}
+            
+    except Exception as e:
+        logger.error(f"Health check failed: {e}")
+        return {"status": "unhealthy", "message": "Health check failed"}
 
 @app.post("/api/v1/auth/register", response_model=AuthResponse)
 async def register(user_data: UserRegister):
     """Register a new user."""
-    logger.info(f"[AUTH] Registration attempt for email: {user_data.email}")
-    logger.info(f"[AUTH] Full name provided: {user_data.full_name}")
-    logger.info(f"[AUTH] Password length: {len(user_data.password) if user_data.password else 0}")
+    logger.info(f"📝 [REGISTER] Registration attempt for email: {user_data.email}")
+    logger.info(f"📝 [REGISTER] Full name provided: {user_data.full_name}")
+    logger.info(f"📝 [REGISTER] Password length: {len(user_data.password) if user_data.password else 0}")
+    
+    # Check Supabase availability
+    if supabase is None:
+        logger.error("📝 [REGISTER] ❌ Supabase client not available")
+        logger.error(f"📝 [REGISTER] SUPABASE_URL: {supabase_url}")
+        logger.error(f"📝 [REGISTER] SUPABASE_KEY configured: {bool(supabase_key)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Registration service unavailable"
+        )
     
     try:
         # Log Supabase configuration
-        logger.info(f"[SUPABASE] URL: {supabase_url}")
-        logger.info(f"[SUPABASE] Key configured: {bool(supabase_key)}")
+        logger.info(f"📝 [REGISTER] Supabase URL: {supabase_url}")
+        logger.info(f"📝 [REGISTER] Supabase Key configured: {bool(supabase_key)}")
+        logger.info(f"📝 [REGISTER] Database mode: {settings.database_mode}")
         
         # Prepare registration data
         registration_data = {
@@ -318,8 +433,21 @@ async def register(user_data: UserRegister):
 @app.post("/api/v1/auth/login", response_model=AuthResponse)
 async def login(user_data: UserLogin):
     """Login user."""
-    logger.info(f"[AUTH] Login attempt for email: {user_data.email}")
-    logger.info(f"[AUTH] Password length: {len(user_data.password) if user_data.password else 0}")
+    logger.info(f"🔑 [LOGIN] Login attempt for email: {user_data.email}")
+    logger.info(f"🔑 [LOGIN] Password length: {len(user_data.password) if user_data.password else 0}")
+    logger.info(f"🔑 [LOGIN] Supabase URL: {supabase_url}")
+    logger.info(f"🔑 [LOGIN] Supabase client available: {supabase is not None}")
+    logger.info(f"🔑 [LOGIN] Database mode: {settings.database_mode}")
+    
+    # Check Supabase availability
+    if supabase is None:
+        logger.error("🔑 [LOGIN] ❌ Supabase client not available")
+        logger.error(f"🔑 [LOGIN] SUPABASE_URL: {supabase_url}")
+        logger.error(f"🔑 [LOGIN] SUPABASE_KEY configured: {bool(supabase_key)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Login service unavailable"
+        )
     
     try:
         # Prepare login data
