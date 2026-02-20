@@ -1,19 +1,20 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { 
-  Upload, 
-  Plus, 
-  TrendingUp, 
-  TrendingDown, 
-  Target, 
-  DollarSign, 
+import {
+  Upload,
+  Plus,
+  TrendingUp,
+  TrendingDown,
+  Target,
+  DollarSign,
   Calendar,
   AlertTriangle,
   FileText,
   CreditCard,
-  PieChart,
+  PieChart as PieChartIcon,
   Bell
 } from 'lucide-react'
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
 import { apiClient } from '../lib/api'
 
 interface DashboardStats {
@@ -43,6 +44,14 @@ interface BudgetAlert {
   percentage: number
 }
 
+interface CategoryData {
+  name: string
+  total_expenses: number
+  expense_count: number
+}
+
+const CHART_COLORS = ['#6366f1', '#f43f5e', '#10b981', '#f59e0b', '#3b82f6', '#8b5cf6', '#64748b']
+
 export function Dashboard() {
   const [stats, setStats] = useState<DashboardStats>({
     totalExpenses: 0,
@@ -54,6 +63,7 @@ export function Dashboard() {
     monthlyTrend: 0
   })
   const [loading, setLoading] = useState(true)
+  const [categoryData, setCategoryData] = useState<CategoryData[]>([])
 
   useEffect(() => {
     loadDashboardData()
@@ -62,9 +72,9 @@ export function Dashboard() {
   const loadDashboardData = async () => {
     try {
       setLoading(true)
-      
+
       // Load dashboard statistics
-      const [statsData, expensesData, alertsData] = await Promise.all([
+      const [statsData, expensesData, alertsData, categoriesData] = await Promise.all([
         apiClient.getDashboardStats().catch(() => ({
           total_expenses: 0,
           monthly_spending: 0,
@@ -73,13 +83,18 @@ export function Dashboard() {
           monthly_trend: 0
         })),
         apiClient.getExpenses({ size: 5 }).catch(() => ({ items: [] })),
-        apiClient.getBudgetAlerts().catch(() => [])
+        apiClient.getBudgetAlerts().catch(() => []),
+        apiClient.getCategories().catch(() => [])
       ])
       
+      // Filter categories that have expenses for chart
+      const withExpenses = (categoriesData || []).filter((c: CategoryData) => c.total_expenses > 0)
+      setCategoryData(withExpenses)
+
       setStats({
         totalExpenses: statsData.total_expenses || 0,
         monthlySpending: statsData.monthly_spending || 0,
-        categoriesCount: statsData.categories_count || 0,
+        categoriesCount: statsData.categories_count || withExpenses.length || 0,
         budgetUsage: statsData.budget_usage || 0,
         recentExpenses: expensesData.items || [],
         budgetAlerts: alertsData || [],
@@ -146,7 +161,7 @@ export function Dashboard() {
             to="/analytics" 
             className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors"
           >
-            <PieChart className="h-4 w-4 mr-2" />
+            <PieChartIcon className="h-4 w-4 mr-2" />
             Analytics
           </Link>
           <Link 
@@ -221,6 +236,55 @@ export function Dashboard() {
         />
       </div>
 
+      {/* Spending by Category Chart */}
+      {categoryData.length > 0 && (
+        <div className="rounded-lg border bg-card p-6">
+          <h3 className="text-lg font-semibold mb-4">Spending by Category</h3>
+          <div className="flex items-center gap-8">
+            <div className="w-64 h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={categoryData}
+                    dataKey="total_expenses"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={100}
+                    innerRadius={50}
+                  >
+                    {categoryData.map((_entry, index) => (
+                      <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    formatter={(value: number) => formatCurrency(value)}
+                    contentStyle={{ borderRadius: '8px', border: '1px solid #e5e7eb' }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="flex-1 space-y-2">
+              {categoryData.map((cat, index) => (
+                <div key={cat.name} className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="w-3 h-3 rounded-full"
+                      style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }}
+                    />
+                    <span>{cat.name}</span>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <span className="text-muted-foreground">{cat.expense_count} txns</span>
+                    <span className="font-medium">{formatCurrency(cat.total_expenses)}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Main Content Grid */}
       <div className="grid gap-6 md:grid-cols-2">
         {/* Quick Actions */}
@@ -264,7 +328,7 @@ export function Dashboard() {
               to="/analytics" 
               className="flex items-center gap-3 p-3 rounded-md hover:bg-muted/50 transition-colors"
             >
-              <PieChart className="h-5 w-5 text-primary" />
+              <PieChartIcon className="h-5 w-5 text-primary" />
               <div>
                 <p className="font-medium">View Analytics</p>
                 <p className="text-sm text-muted-foreground">

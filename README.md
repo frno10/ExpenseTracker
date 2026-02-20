@@ -1,41 +1,40 @@
 # Expense Tracker
 
-A personal finance management system with authentication, expense tracking, statement import, and category management. Built with FastAPI and React.
+A personal finance management system with authentication, expense tracking, bank statement import, analytics, and category management. Built with FastAPI and React.
 
 ## Current State
 
-This project has substantial code (~53,800 lines of Python, ~6,800 lines of TypeScript) but there is a gap between what exists as code and what is actually wired into the running application. See [PROJECT_ASSESSMENT.md](PROJECT_ASSESSMENT.md) for a full analysis.
+See [PROJECT_ASSESSMENT.md](PROJECT_ASSESSMENT.md) for a detailed analysis and remediation history.
 
 ### Working End-to-End
-- User registration and login (Supabase Auth)
+- User registration and login (Supabase Auth with proper JWT verification)
 - Expense CRUD (create, read, update, delete)
 - Category listing with expense summaries
-- PDF statement upload and preview (CSOB bank parser)
-- Statement import to expenses
-- Dashboard page with stats
+- PDF statement upload, preview, and import (CSOB bank parser)
+- Dashboard with stats and spending-by-category pie chart
+- Analytics with trends (line chart), categories (pie/bar charts + table), and computed insights
+- CSV export of expense data
+- Security headers on all responses
 - Health check / monitoring endpoint
 
-### Coded but Not Connected
-The following features have full implementations (services, API routers, models, tests) in `backend/app/` but their routers are **not included** in `main.py`. A backup file (`main_complex_backup.py`) shows they were once connected:
-
-- Budget management (service + API + frontend pages)
-- Recurring expenses (service + API + frontend pages)
-- Advanced analytics (service + API + frontend pages)
+### Reconnected Modular Routers
+The following routers are included in `main.py` with graceful degradation (they activate when their SQLAlchemy database dependencies are available):
+- Budget management
+- Recurring expenses
+- Advanced analytics
 - Payment methods / accounts
 - Notes and attachments
-- Data export (CSV, PDF, Excel)
+- Data export (multi-format)
 - WebSocket real-time updates
-- Security middleware (CSRF, rate limiting, security headers)
-- Audit logging
-- CLI application (Click-based)
+- Security endpoints
+- Monitoring
 
-### Not Implemented
-- Redis caching (architecture only, no Redis connection)
-- OpenTelemetry (code exists but dependency is optional/not installed)
-- Chart visualizations (Recharts installed, no charts rendered)
-- CI/CD pipeline
+### Not Yet Implemented
+- Redis caching (architecture only)
 - Database migrations (Alembic configured but migrations gitignored)
-- Frontend tests (1 test file with 1 test)
+- E2E tests
+- Rate limiting / CSRF middleware activation
+- Multi-currency support
 
 ## Quick Start
 
@@ -51,6 +50,7 @@ cd backend
 python -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\Activate.ps1
 pip install -r requirements.txt
+cp .env.example .env  # Edit with your Supabase credentials
 python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
@@ -59,6 +59,7 @@ python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```bash
 cd frontend
 npm install
+cp .env.example .env.local  # Edit with your API URL
 npm run dev
 ```
 
@@ -72,31 +73,32 @@ npm run dev
 ExpenseTracker/
 ├── backend/
 │   ├── app/
-│   │   ├── main.py              # Running application (auth + expenses + statement import)
-│   │   ├── main_complex_backup.py  # Backup showing all routers connected
-│   │   ├── api/                 # Modular API routers (NOT wired into main.py)
-│   │   ├── services/            # Business logic layer (NOT wired into main.py)
+│   │   ├── main.py              # Application entry point (~760 lines)
+│   │   ├── api/                 # Modular API routers (reconnected to main.py)
+│   │   ├── services/            # Business logic layer
 │   │   ├── models/              # SQLAlchemy + Pydantic models
 │   │   ├── repositories/        # Data access layer
 │   │   ├── parsers/             # Statement parsers (PDF, CSV, Excel, OFX, QIF)
-│   │   └── core/                # Security, encryption, telemetry, config
-│   ├── tests/                   # ~512 test functions (test the disconnected modules)
-│   └── cli/                     # Click-based CLI (standalone, not connected to API)
-├── frontend/                    # React + TypeScript + Tailwind + Shadcn/ui
+│   │   └── core/                # Auth, config, security, exceptions
+│   ├── tests/                   # ~512 test functions
+│   └── cli/                     # Click-based CLI (standalone)
+├── frontend/                    # React + TypeScript + Tailwind + Shadcn/ui + Recharts
+├── .github/workflows/           # CI/CD pipeline
 ├── docs/                        # Documentation
 └── .kiro/specs/                 # Kiro requirement specs and task plans
 ```
 
-**Important architectural note:** `main.py` uses Supabase REST API directly for data access. The modular `app/api/*` + `app/services/*` layer uses SQLAlchemy with async PostgreSQL. These are two different data access patterns that need to be reconciled before the routers can be reconnected.
+**Architecture:** `main.py` handles auth, expense CRUD, and statement import using Supabase REST API directly. Modular routers (`app/api/*`) use SQLAlchemy with async PostgreSQL. Both connect to the same Supabase PostgreSQL database.
 
 ## Technology Stack
 
 - **Backend**: Python, FastAPI, Supabase Auth, Pydantic
 - **Database**: PostgreSQL (via Supabase)
-- **Frontend**: React, TypeScript, Tailwind CSS, Shadcn/ui
-- **Testing**: pytest (backend), Vitest (frontend - minimal)
+- **Frontend**: React 18, TypeScript, Tailwind CSS, Shadcn/ui, Recharts
+- **Testing**: pytest (backend), Vitest (frontend, 8 tests)
+- **CI/CD**: GitHub Actions (lint, test, build)
 
-## API Endpoints (Currently Active)
+## API Endpoints
 
 ### Authentication
 - `POST /api/v1/auth/register` - Register new user
@@ -115,17 +117,17 @@ ExpenseTracker/
 - `GET /api/v1/summary` - Expense overview
 
 ### Statement Import
-- `POST /api/v1/statements/upload` - Upload statement file
-- `POST /api/v1/statements/{id}/preview` - Preview parsed transactions
-- `POST /api/v1/statements/{id}/analyze-duplicates` - Check for duplicates
-- `POST /api/v1/statements/{id}/confirm` - Confirm and import
+- `POST /api/statement-import/upload` - Upload statement file
+- `POST /api/statement-import/preview/{id}` - Preview parsed transactions
+- `POST /api/statement-import/analyze-duplicates/{id}` - Check for duplicates
+- `POST /api/statement-import/confirm/{id}` - Confirm and import
 
 ### Monitoring
 - `GET /health` - Health check
 
 ## Configuration
 
-The application uses environment variables. Copy `.env.example` to `.env` in the backend directory:
+Copy `.env.example` to `.env` in the backend directory:
 
 ```env
 SUPABASE_URL=your_supabase_url
@@ -134,19 +136,10 @@ SECRET_KEY=your_secret_key
 DEBUG=true
 ```
 
-## Known Issues
-
-1. **venv/ and node_modules/ are committed to git** - These should be removed with `git rm -r --cached`
-2. **JWT signature verification disabled** in `main.py:297` - Security vulnerability
-3. **Sensitive data logged** - Password lengths, token previews, Supabase URLs
-4. **Two parallel data access patterns** - main.py uses Supabase REST, modules use SQLAlchemy
-5. **Backend tests test disconnected code** - Tests pass but exercise modules that aren't in the running app
-
 ## Documentation
 
-- [PROJECT_ASSESSMENT.md](PROJECT_ASSESSMENT.md) - Honest assessment of project state
+- [PROJECT_ASSESSMENT.md](PROJECT_ASSESSMENT.md) - Project assessment and remediation history
 - [DEVELOPMENT.md](DEVELOPMENT.md) - Development setup guide
-- [DEVELOPMENT_GUIDE.md](DEVELOPMENT_GUIDE.md) - Extended guide with environment switching
 - [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) - Deployment guide
 - [docs/SUPABASE_AUTHENTICATION.md](docs/SUPABASE_AUTHENTICATION.md) - Auth system guide
 - [API Docs](http://localhost:8000/docs) - Interactive API documentation (when running)
