@@ -1,117 +1,63 @@
 # Expense Tracker Documentation
 
-Welcome to the comprehensive documentation for the Expense Tracker system - a modern, full-featured personal finance management application.
+Documentation for the Expense Tracker system - a personal finance management application built with FastAPI and React.
 
-## 📚 Documentation Structure
+## Documentation Structure
 
-- [Database Schema](./database/schema.md) - Complete database design and relationships
-- [API Documentation](./api/README.md) - REST API endpoints and usage
+- [Database Schema](./database/schema.md) - Database design and relationships
 - [Architecture Overview](./architecture/README.md) - System design and components
 - [Development Guide](./development/README.md) - Setup and development workflow
-- [Deployment Guide](./deployment/README.md) - Production deployment instructions
+- [Deployment Guide](./DEPLOYMENT.md) - Production deployment instructions
+- [Free Deployment](./FREE_DEPLOYMENT.md) - Free tier deployment guide
+- [Supabase Auth](./SUPABASE_AUTHENTICATION.md) - Authentication system guide
 
-## 🏗️ System Overview
+## System Overview
 
-The Expense Tracker is built as a modular monolith with three primary interfaces:
+The Expense Tracker is designed as a modular monolith with three interfaces:
 
-- **Web Application**: React + TypeScript frontend with modern UI
-- **REST API**: FastAPI backend with comprehensive endpoints
-- **CLI Application**: Python Click-based command-line interface
+- **Web Application**: React + TypeScript frontend with Shadcn/ui
+- **REST API**: FastAPI backend with OpenAPI documentation
+- **CLI Application**: Python Click-based command-line interface (standalone, not connected to API)
 
-### Key Features
+## Project Status
 
-- 💰 **Expense Management**: Track expenses with categories and payment methods
-- 📊 **Advanced Analytics**: Multiple visualization types and insights
-- 📄 **Statement Parsing**: Support for PDF, CSV, Excel, OFX, QIF formats
-- 💳 **Budget Management**: Set limits and track spending against budgets
-- 🔍 **Search & Filtering**: Powerful search across all expense data
-- 📱 **Multi-Interface**: Consistent functionality across web, API, and CLI
-- 🔒 **Security**: JWT authentication and data encryption
-- 📈 **Observability**: OpenTelemetry tracing and structured logging
+See [PROJECT_ASSESSMENT.md](../PROJECT_ASSESSMENT.md) for a comprehensive, honest assessment.
 
-## 🚀 Quick Start
+### Working End-to-End
+- [x] User authentication (Supabase Auth)
+- [x] Expense CRUD operations
+- [x] Category management with summaries
+- [x] PDF statement import (CSOB bank parser)
+- [x] Dashboard with basic stats
+- [x] Health check endpoint
 
-### Prerequisites
+### Coded but Not Connected to Running App
+- [ ] Budget management (service + API + frontend exist)
+- [ ] Recurring expenses (service + API + frontend exist)
+- [ ] Advanced analytics (service + API + frontend exist)
+- [ ] Payment methods / accounts
+- [ ] Notes and attachments
+- [ ] Data export (CSV, PDF, Excel)
+- [ ] WebSocket real-time updates
+- [ ] Security middleware (CSRF, rate limiting, headers)
+- [ ] Audit logging
+- [ ] CLI integration with API
 
-- Python 3.11+
-- Node.js 18+
-- Docker/Podman (for PostgreSQL)
-- Git
+### Not Implemented
+- [ ] Performance optimizations (Task 21)
+- [ ] Redis caching
+- [ ] OpenTelemetry (dependency not installed)
+- [ ] Chart visualizations
+- [ ] CI/CD pipeline
+- [ ] Database migration management
+- [ ] Frontend testing (1 test exists)
+- [ ] Deployment and documentation finalization (Task 23)
 
-### Development Setup
-
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd expense-tracker
-   ```
-
-2. **Start the database**
-   ```bash
-   # Windows
-   .\scripts\dev-db.ps1 start
-   
-   # Unix/Linux/macOS
-   ./scripts/dev-db.sh start
-   ```
-
-3. **Set up the backend**
-   ```bash
-   cd backend
-   python -m venv venv
-   source venv/bin/activate  # Windows: venv\Scripts\activate.ps1
-   pip install -r requirements.txt
-   alembic upgrade head
-   ```
-
-4. **Set up the frontend**
-   ```bash
-   cd frontend
-   npm install
-   ```
-
-5. **Run the applications**
-   ```bash
-   # Backend (Terminal 1)
-   cd backend
-   uvicorn app.main:app --reload
-   
-   # Frontend (Terminal 2)
-   cd frontend
-   npm run dev
-   ```
-
-## 📋 Project Status
-
-This project is currently in active development. See the [task list](.kiro/specs/expense-tracker/tasks.md) for current progress.
-
-### Completed Features ✅
-
-- [x] Project foundation and infrastructure
-- [x] Core data models and database layer
-- [x] Repository pattern implementation
-- [x] Database migrations with Alembic
-
-### In Progress 🚧
-
-- [ ] Authentication and security foundation
-- [ ] Basic expense management API
-- [ ] Statement parsing architecture
-
-### Planned Features 📋
-
-- [ ] Advanced analytics engine
-- [ ] Web application frontend
-- [ ] CLI application
-- [ ] Real-time features
-- [ ] Comprehensive security measures
-
-## 🛠️ Technology Stack
+## Technology Stack
 
 ### Backend
 - **Framework**: FastAPI (Python)
-- **Database**: PostgreSQL with SQLAlchemy ORM
-- **Migrations**: Alembic
+- **Database**: PostgreSQL (via Supabase)
 - **Authentication**: JWT with Supabase Auth
 - **Validation**: Pydantic v2
 - **Testing**: pytest with async support
@@ -119,27 +65,15 @@ This project is currently in active development. See the [task list](.kiro/specs
 ### Frontend
 - **Framework**: React 18 with TypeScript
 - **UI Library**: Shadcn/ui + Tailwind CSS
-- **Charts**: Recharts
 - **Forms**: React Hook Form
-- **Testing**: Vitest + React Testing Library
 
-### Infrastructure
-- **Database**: PostgreSQL (development via Docker)
-- **File Storage**: Supabase Storage
-- **Observability**: OpenTelemetry
-- **Deployment**: Railway/Fly.io (backend), Vercel (frontend)
+## Additional Resources
 
-## 📖 Additional Resources
-
-- [Requirements Document](.kiro/specs/expense-tracker/requirements.md)
-- [Design Document](.kiro/specs/expense-tracker/design.md)
-- [Task List](.kiro/specs/expense-tracker/tasks.md)
+- [Requirements Document](../.kiro/specs/expense-tracker/requirements.md)
+- [Design Document](../.kiro/specs/expense-tracker/design.md)
+- [Task List](../.kiro/specs/expense-tracker/tasks.md)
 - [Changelog](../CHANGELOG.md)
 
-## 🤝 Contributing
+## Contributing
 
 This project follows a spec-driven development approach. Please refer to the requirements and design documents before making changes.
-
-## 📄 License
-
-[Add your license information here]
