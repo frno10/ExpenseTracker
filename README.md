@@ -73,19 +73,19 @@ npm run dev
 ExpenseTracker/
 ├── backend/
 │   ├── app/
-│   │   ├── main.py              # Application entry point (~760 lines)
-│   │   ├── api/                 # Modular API routers (reconnected to main.py)
-│   │   ├── services/            # Business logic layer
-│   │   ├── models/              # SQLAlchemy + Pydantic models
-│   │   ├── repositories/        # Data access layer
-│   │   ├── parsers/             # Statement parsers (PDF, CSV, Excel, OFX, QIF)
-│   │   └── core/                # Auth, config, security, exceptions
-│   ├── tests/                   # ~512 test functions
-│   └── cli/                     # Click-based CLI (standalone)
-├── frontend/                    # React + TypeScript + Tailwind + Shadcn/ui + Recharts
-├── .github/workflows/           # CI/CD pipeline
-├── docs/                        # Documentation
-└── .kiro/specs/                 # Kiro requirement specs and task plans
+│   │   ├── main.py           # Application entry point
+│   │   ├── api/              # Modular API routers
+│   │   ├── services/         # Business logic layer
+│   │   ├── models/           # SQLAlchemy + Pydantic models
+│   │   ├── parsers/          # Statement parsers (PDF, CSV, Excel, OFX, QIF)
+│   │   └── core/             # Auth, config, security, exceptions
+│   └── tests/                # Backend tests
+├── frontend/                 # React + TypeScript + Tailwind + Recharts
+├── cli/                      # Click-based CLI (standalone)
+├── scripts/                  # Setup and deployment scripts
+├── docs/                     # Documentation
+├── .github/workflows/        # CI/CD pipeline
+└── .kiro/specs/              # Kiro requirement specs
 ```
 
 **Architecture:** `main.py` handles auth, expense CRUD, and statement import using Supabase REST API directly. Modular routers (`app/api/*`) use SQLAlchemy with async PostgreSQL. Both connect to the same Supabase PostgreSQL database.
@@ -141,7 +141,10 @@ DEBUG=true
 - [PROJECT_ASSESSMENT.md](PROJECT_ASSESSMENT.md) - Project assessment and remediation history
 - [DEVELOPMENT.md](DEVELOPMENT.md) - Development setup guide
 - [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) - Deployment guide
+- [docs/FREE_DEPLOYMENT.md](docs/FREE_DEPLOYMENT.md) - Free tier deployment
 - [docs/SUPABASE_AUTHENTICATION.md](docs/SUPABASE_AUTHENTICATION.md) - Auth system guide
+- [docs/SECURITY.md](docs/SECURITY.md) - Security features status
+- [docs/database/schema.md](docs/database/schema.md) - Database schema
 - [API Docs](http://localhost:8000/docs) - Interactive API documentation (when running)
 
 ## License
