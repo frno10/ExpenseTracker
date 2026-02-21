@@ -56,9 +56,13 @@ class UserCreate(CreateSchema):
 
 class UserUpdate(UpdateSchema):
     """Schema for updating a user."""
-    
+
     email: Optional[EmailStr] = None
     name: Optional[str] = None
     timezone: Optional[str] = None
     currency: Optional[str] = None
     is_active: Optional[bool] = None
+
+
+# Alias for backwards compatibility - some modules import User instead of UserTable
+User = UserTable

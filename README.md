@@ -1,81 +1,133 @@
 # Expense Tracker
 
-A comprehensive personal finance management system with authentication, expense tracking, and category management.
+A personal finance management system with authentication, expense tracking, bank statement import, analytics, and category management. Built with FastAPI and React.
 
-## 🚀 Quick Start
+## Current State
 
-**For Development Setup**: See [DEVELOPMENT.md](DEVELOPMENT.md) for detailed setup instructions.
+See [PROJECT_ASSESSMENT.md](PROJECT_ASSESSMENT.md) for a detailed analysis and remediation history.
 
-### Windows Development
+### Working End-to-End
+- User registration and login (Supabase Auth with proper JWT verification)
+- Expense CRUD (create, read, update, delete)
+- Category listing with expense summaries
+- PDF statement upload, preview, and import (CSOB bank parser)
+- Dashboard with stats and spending-by-category pie chart
+- Analytics with trends (line chart), categories (pie/bar charts + table), and computed insights
+- CSV export of expense data
+- Security headers on all responses
+- Health check / monitoring endpoint
 
-```powershell
-# Activate virtual environment
-& .venv\Scripts\Activate.ps1
+### Reconnected Modular Routers
+The following routers are included in `main.py` with graceful degradation (they activate when their SQLAlchemy database dependencies are available):
+- Budget management
+- Recurring expenses
+- Advanced analytics
+- Payment methods / accounts
+- Notes and attachments
+- Data export (multi-format)
+- WebSocket real-time updates
+- Security endpoints
+- Monitoring
 
-# Navigate to backend
+### Not Yet Implemented
+- Redis caching (architecture only)
+- Database migrations (Alembic configured but migrations gitignored)
+- E2E tests
+- Rate limiting / CSRF middleware activation
+- Multi-currency support
+
+## Quick Start
+
+### Prerequisites
+- Python 3.11+
+- Node.js 18+
+- A Supabase account and project
+
+### Backend
+
+```bash
 cd backend
-
-# Start the server
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+cp .env.example .env  # Edit with your Supabase credentials
 python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-**API will be available at**: <http://localhost:8000>  
-**API Documentation**: <http://localhost:8000/docs>
+### Frontend
 
-## 📁 Project Structure
+```bash
+cd frontend
+npm install
+cp .env.example .env.local  # Edit with your API URL
+npm run dev
+```
+
+**API**: http://localhost:8000
+**API Docs**: http://localhost:8000/docs
+**Frontend**: http://localhost:5173
+
+## Project Structure
 
 ```
-expense-tracker/
+ExpenseTracker/
 ├── backend/
 │   ├── app/
-│   │   └── main.py          # Single main application (ENTRY POINT)
-│   ├── .env                 # Environment configuration
-│   └── requirements.txt     # Python dependencies
-├── frontend/                # React TypeScript frontend
-├── docs/                    # Documentation and specs
-└── DEVELOPMENT.md           # Detailed setup guide
+│   │   ├── main.py              # Application entry point (~760 lines)
+│   │   ├── api/                 # Modular API routers (reconnected to main.py)
+│   │   ├── services/            # Business logic layer
+│   │   ├── models/              # SQLAlchemy + Pydantic models
+│   │   ├── repositories/        # Data access layer
+│   │   ├── parsers/             # Statement parsers (PDF, CSV, Excel, OFX, QIF)
+│   │   └── core/                # Auth, config, security, exceptions
+│   ├── tests/                   # ~512 test functions
+│   └── cli/                     # Click-based CLI (standalone)
+├── frontend/                    # React + TypeScript + Tailwind + Shadcn/ui + Recharts
+├── .github/workflows/           # CI/CD pipeline
+├── docs/                        # Documentation
+└── .kiro/specs/                 # Kiro requirement specs and task plans
 ```
 
-## ✨ Features
+**Architecture:** `main.py` handles auth, expense CRUD, and statement import using Supabase REST API directly. Modular routers (`app/api/*`) use SQLAlchemy with async PostgreSQL. Both connect to the same Supabase PostgreSQL database.
 
-- **Authentication**: User registration and login with Supabase
-- **Expense Management**: Create, read, update, delete expenses
-- **Categories**: Organize expenses by category with summaries
-- **User Isolation**: Each user's data is completely separate
-- **REST API**: Full RESTful API with OpenAPI documentation
-- **Real-time**: Built with FastAPI for high performance
-
-## 🛠 Technology Stack
+## Technology Stack
 
 - **Backend**: Python, FastAPI, Supabase Auth, Pydantic
 - **Database**: PostgreSQL (via Supabase)
-- **Frontend**: React, TypeScript, Tailwind CSS, Shadcn/ui
-- **Development**: Python virtual environment, hot reload
+- **Frontend**: React 18, TypeScript, Tailwind CSS, Shadcn/ui, Recharts
+- **Testing**: pytest (backend), Vitest (frontend, 8 tests)
+- **CI/CD**: GitHub Actions (lint, test, build)
 
-## 📚 API Endpoints
+## API Endpoints
 
 ### Authentication
-
 - `POST /api/v1/auth/register` - Register new user
-- `POST /api/v1/auth/login` - Login user  
+- `POST /api/v1/auth/login` - Login user
 - `GET /api/v1/auth/me` - Get current user
 
 ### Expenses
-
 - `POST /api/v1/expenses` - Create expense
-- `GET /api/v1/expenses` - List all expenses
+- `GET /api/v1/expenses` - List expenses
 - `GET /api/v1/expenses/{id}` - Get specific expense
 - `PUT /api/v1/expenses/{id}` - Update expense
 - `DELETE /api/v1/expenses/{id}` - Delete expense
 
-### Analytics
-
+### Categories & Summary
 - `GET /api/v1/categories` - Category summaries
 - `GET /api/v1/summary` - Expense overview
 
-## 🔧 Configuration
+### Statement Import
+- `POST /api/statement-import/upload` - Upload statement file
+- `POST /api/statement-import/preview/{id}` - Preview parsed transactions
+- `POST /api/statement-import/analyze-duplicates/{id}` - Check for duplicates
+- `POST /api/statement-import/confirm/{id}` - Confirm and import
 
-The application uses environment variables in `backend/.env`:
+### Monitoring
+- `GET /health` - Health check
+
+## Configuration
+
+Copy `.env.example` to `.env` in the backend directory:
 
 ```env
 SUPABASE_URL=your_supabase_url
@@ -84,55 +136,14 @@ SECRET_KEY=your_secret_key
 DEBUG=true
 ```
 
-## 📖 Documentation
+## Documentation
 
-- [DEVELOPMENT.md](DEVELOPMENT.md) - Complete development setup guide
-- [DEPLOYMENT.md](docs/DEPLOYMENT.md) - Production deployment guide
-- [SUPABASE_AUTHENTICATION.md](docs/SUPABASE_AUTHENTICATION.md) - Authentication system guide
+- [PROJECT_ASSESSMENT.md](PROJECT_ASSESSMENT.md) - Project assessment and remediation history
+- [DEVELOPMENT.md](DEVELOPMENT.md) - Development setup guide
+- [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) - Deployment guide
+- [docs/SUPABASE_AUTHENTICATION.md](docs/SUPABASE_AUTHENTICATION.md) - Auth system guide
 - [API Docs](http://localhost:8000/docs) - Interactive API documentation (when running)
-- [Supabase Dashboard](https://supabase.com/dashboard) - Database and auth management
 
-## 🚀 Deployment
-
-Your application is production-ready! Choose from several deployment options:
-
-### 🆓 100% FREE Deploy (Recommended)
-
-- **Frontend**: Netlify (100GB bandwidth/month)
-- **Backend**: Render (750 hours/month)  
-- **Database**: Supabase (500MB storage)
-- **Total Cost**: $0/month forever
-
-```powershell
-# Windows - Deploy to free tier
-.\scripts\deploy-free.ps1
-
-# Linux/Mac - Deploy to free tier  
-./scripts/deploy-free.sh
-```
-
-### 💰 Premium Deploy
-
-- **Frontend**: Vercel ($20/month)
-- **Backend**: Railway ($5/month)
-- **Database**: Supabase (free tier)
-
-### 🐳 Docker Deploy
-
-```powershell
-# Full Docker deployment
-.\scripts\deploy.ps1
-```
-
-See [FREE_DEPLOYMENT.md](docs/FREE_DEPLOYMENT.md) for free deployment or [DEPLOYMENT.md](docs/DEPLOYMENT.md) for all options.
-
-## 🤝 Contributing
-
-1. Follow the setup in [DEVELOPMENT.md](DEVELOPMENT.md)
-2. Make your changes
-3. Test the API endpoints
-4. Submit a pull request
-
-## 📄 License
+## License
 
 This project is licensed under the MIT License.

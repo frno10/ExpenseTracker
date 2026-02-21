@@ -42,34 +42,34 @@ This will give you instructions to:
 3. Verify tables were created
 
 **Or manually**:
-1. Go to: https://supabase.com/dashboard/project/nsvdbcqvyphyiktrvtkw/sql
+1. Go to your Supabase project SQL Editor
 2. Copy all content from `backend/database_schema.sql`
 3. Paste and click "Run"
-4. Verify tables in: https://supabase.com/dashboard/project/nsvdbcqvyphyiktrvtkw/editor
+4. Verify tables in the Table Editor
 
 ### 3. Configure Environment Variables
 
-The backend `.env` file should already be configured with your Supabase credentials:
+Copy `backend/.env.example` to `backend/.env` and fill in your Supabase credentials:
 
 ```env
-DATABASE_URL=postgresql+asyncpg://postgres:ExpenseTracker%2F56@db.nsvdbcqvyphyiktrvtkw.supabase.co:5432/postgres
-SUPABASE_URL=https://nsvdbcqvyphyiktrvtkw.supabase.co
-SUPABASE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5zdmRiY3F2eXBoeWlrdHJ2dGt3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM4ODUzMjUsImV4cCI6MjA2OTQ2MTMyNX0.Mg8xh_x3mXwetx1NU3AocQpV5TovYpl1uxlEHlxFG-s
-SECRET_KEY=dev-secret-key-change-in-production
+DATABASE_URL=postgresql+asyncpg://postgres:YOUR_PASSWORD@db.YOUR_PROJECT.supabase.co:5432/postgres
+SUPABASE_URL=https://YOUR_PROJECT.supabase.co
+SUPABASE_KEY=your_supabase_anon_key
+SECRET_KEY=generate-a-random-secret-key
 DEBUG=true
 ```
 
-For the frontend, you'll need a local development environment file. Create `frontend/.env.local`:
+For the frontend, create `frontend/.env.local` with your credentials:
 
 ```env
 VITE_API_URL=http://localhost:8000/api/v1
-VITE_SUPABASE_URL=https://nsvdbcqvyphyiktrvtkw.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5zdmRiY3F2eXBoeWlrdHJ2dGt3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM4ODUzMjUsImV4cCI6MjA2OTQ2MTMyNX0.Mg8xh_x3mXwetx1NU3AocQpV5TovYpl1uxlEHlxFG-s
+VITE_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 VITE_WS_URL=ws://localhost:8000/ws
 VITE_NODE_ENV=development
 ```
 
-**Note:** The `.env.local` file is ignored by git and won't affect your production deployment.
+**Note:** Never commit actual credentials to git. The `.env.local` file is ignored by git.
 
 ### 4. Start the Backend Server
 
@@ -173,17 +173,22 @@ python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --log-level d
 ```
 backend/
 ├── app/
-│   ├── main.py              # Single main application (THE ONLY ENTRY POINT)
-│   ├── api/                 # API route modules (complex version - not used)
-│   ├── core/                # Core utilities (complex version - not used)
-│   ├── models/              # Data models (complex version - not used)
-│   └── ...                  # Other modules (complex version - not used)
-├── .env                     # Environment variables
+│   ├── main.py              # Running application (auth + expenses + statement import)
+│   ├── main_complex_backup.py  # Backup showing all routers connected
+│   ├── api/                 # Modular API routers (coded but NOT connected to main.py)
+│   ├── services/            # Business logic layer (coded but NOT connected to main.py)
+│   ├── models/              # SQLAlchemy + Pydantic models
+│   ├── repositories/        # Data access layer
+│   ├── parsers/             # Statement parsers (PDF, CSV, Excel, OFX, QIF)
+│   └── core/                # Security, encryption, telemetry, config
+├── tests/                   # ~512 test functions (test the disconnected modules)
+├── cli/                     # Click-based CLI (standalone)
+├── .env                     # Environment variables (not committed)
 ├── requirements.txt         # Python dependencies
 └── ...
 ```
 
-**Important**: We use `app/main.py` as the single, complete application. The other modules in the `app/` directory are from a more complex version that had dependency issues.
+**Important**: `app/main.py` is the running entry point. It handles auth, expenses, and statement import using Supabase REST API directly. The modular `app/api/` + `app/services/` layer uses SQLAlchemy and is NOT connected to the running app. See [PROJECT_ASSESSMENT.md](PROJECT_ASSESSMENT.md) for details.
 
 ## Supabase Integration
 
@@ -193,15 +198,17 @@ The application uses Supabase for:
 
 ### Supabase Dashboard
 
-You can view your Supabase project at: https://supabase.com/dashboard/project/nsvdbcqvyphyiktrvtkw
+You can view your Supabase project at: https://supabase.com/dashboard
 
-## Next Steps
+## Known Issues & Next Steps
 
-1. **Add Database Persistence**: Replace in-memory storage with actual Supabase database calls
-2. **Add More Features**: Budgets, categories, file uploads, etc.
-3. **Frontend Integration**: Connect the React frontend to this API
-4. **Testing**: Add comprehensive test suite
-5. **Deployment**: Deploy to production environment
+1. **Reconnect modular API routers** to main.py (budget, analytics, recurring expenses, etc.)
+2. **Fix JWT signature verification** - currently disabled (`verify_signature: False`)
+3. **Reconcile data access patterns** - main.py uses Supabase REST, modules use SQLAlchemy
+4. **Remove venv/ and node_modules/ from git** - use `git rm -r --cached`
+5. **Enable security middleware** - CSRF, rate limiting, security headers exist but aren't applied
+6. **Add frontend tests** - only 1 test exists currently
+7. **Set up CI/CD pipeline**
 
 ## Environment Configuration
 

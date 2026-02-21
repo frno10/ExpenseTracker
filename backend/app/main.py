@@ -1,212 +1,233 @@
 """
-Expense Tracker - Complete FastAPI application with Supabase authentication.
-This is the main and only application entry point.
+Expense Tracker - FastAPI application with Supabase authentication.
+
+Architecture:
+- Auth (register/login): Supabase Auth API
+- Expense CRUD & statement import: Supabase REST API (inline routes)
+- Budgets, analytics, recurring expenses, etc.: Modular routers with SQLAlchemy
 """
-from fastapi import FastAPI, HTTPException, status, Depends, Request
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-import time
-from pydantic import BaseModel
-from typing import Optional
-import os
 import logging
+import os
 import sys
-from supabase import create_client, Client
-import jwt
-from datetime import datetime
-from dotenv import load_dotenv
+import tempfile
+import time
 import uuid
+from contextlib import asynccontextmanager
+from datetime import datetime
+from typing import Any, Dict, Optional
 
-# Import proper authentication system
-from app.core.auth import get_current_user as get_current_user_proper
+from dotenv import load_dotenv
+from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile, status
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from supabase import Client, create_client
+
+from app.core.auth import CurrentUser, get_current_user
 from app.core.config import settings
-
-# Import monitoring API
-from app.api.monitoring import router as monitoring_router
-
-# Conditional imports based on database mode
-try:
-    from app.models import UserTable
-except ImportError:
-    UserTable = None
 
 # Load environment variables
 load_dotenv()
 
-# Configure logging (Windows-compatible)
+# Configure logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(sys.stdout),
-        logging.FileHandler('app.log', encoding='utf-8')
-    ]
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[logging.StreamHandler(sys.stdout)],
 )
 logger = logging.getLogger(__name__)
 
-# Set console handler encoding for Windows
-for handler in logging.getLogger().handlers:
-    if isinstance(handler, logging.StreamHandler):
-        handler.stream = sys.stdout
+# ---------------------------------------------------------------------------
+# Supabase client
+# ---------------------------------------------------------------------------
+supabase_url = os.getenv("SUPABASE_URL")
+supabase_key = os.getenv("SUPABASE_KEY")
+supabase: Optional[Client] = None
 
-# Create FastAPI app
-app = FastAPI(
-    title="Expense Tracker API",
-    description="A comprehensive expense management system",
-    version="1.0.0",
-)
+if supabase_url and supabase_key:
+    try:
+        supabase = create_client(supabase_url, supabase_key)
+        logger.info("Supabase client created successfully")
+    except Exception as e:
+        logger.error(f"Failed to create Supabase client: {e}")
+else:
+    logger.warning("Supabase client not initialized - missing SUPABASE_URL or SUPABASE_KEY")
 
-# Include monitoring API router
-app.include_router(monitoring_router, prefix="/api/v1/monitoring", tags=["monitoring"])
 
-@app.on_event("startup")
-async def startup_event():
-    """Initialize database on startup."""
-    from app.core.config import settings
-    
-    logger.info(f"[STARTUP] Database mode: {settings.database_mode}")
-    
-    # Log configuration summary
-    settings.log_config_summary()
-    
+# ---------------------------------------------------------------------------
+# Application lifespan - initialize and close database
+# ---------------------------------------------------------------------------
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Initialize database on startup, close on shutdown."""
     if settings.database_mode == "postgresql":
-        # Direct PostgreSQL connection with SQLAlchemy using our enhanced database management
         try:
-            from app.core.database import initialize_database, init_db
-            
-            # Initialize database connection with retry logic
+            from app.core.database import close_db, init_db, initialize_database
+
             await initialize_database()
-            logger.info("[STARTUP] Database connection initialized successfully")
-            
-            # Create database tables
+            logger.info("Database connection initialized")
             await init_db()
-            logger.info("[STARTUP] PostgreSQL database tables initialized successfully")
-            
+            logger.info("Database tables initialized")
         except Exception as e:
-            logger.error(f"[STARTUP] PostgreSQL initialization failed: {e}")
-            logger.error("[STARTUP] Application startup failed - check database connection")
-            raise
-            
-    elif settings.database_mode == "supabase_rest":
-        # Supabase REST API mode
-        logger.info("[STARTUP] Using Supabase REST API for database operations")
-        if supabase is None:
-            logger.error("[STARTUP] Supabase client not available - check SUPABASE_URL and SUPABASE_KEY")
-            raise ValueError("Supabase client not initialized but required for supabase_rest mode")
-        
-        try:
-            # Test Supabase connection
-            test_response = supabase.table('users').select('id').limit(1).execute()
-            logger.info("[STARTUP] Supabase REST API connection verified")
-        except Exception as e:
-            logger.error(f"[STARTUP] Supabase REST API test failed: {e}")
-            logger.error("[STARTUP] Application startup failed - check Supabase connection")
-            raise
-            
-    else:
-        logger.error(f"[STARTUP] Invalid database mode: {settings.database_mode}")
-        logger.error("[STARTUP] Valid options: postgresql, supabase_rest")
-        raise ValueError(f"Invalid database mode: {settings.database_mode}")
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Clean up resources on shutdown."""
-    from app.core.config import settings
-    
-    logger.info("[SHUTDOWN] Application shutting down...")
-    
+            logger.error(f"Database initialization failed: {e}")
+            # Don't crash - inline routes using Supabase REST still work
+    yield
     if settings.database_mode == "postgresql":
         try:
             from app.core.database import close_db
-            await close_db()
-            logger.info("[SHUTDOWN] Database connections closed successfully")
-        except Exception as e:
-            logger.error(f"[SHUTDOWN] Error closing database connections: {e}")
-    
-    logger.info("[SHUTDOWN] Application shutdown completed")
 
-# Add CORS middleware
+            await close_db()
+            logger.info("Database connections closed")
+        except Exception:
+            pass
+
+
+# ---------------------------------------------------------------------------
+# FastAPI app
+# ---------------------------------------------------------------------------
+app = FastAPI(
+    title="Expense Tracker API",
+    description="Personal finance management system",
+    version="1.0.0",
+    lifespan=lifespan,
+)
+
+
+# ---------------------------------------------------------------------------
+# Middleware
+# ---------------------------------------------------------------------------
+
+# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:3000", 
+        "http://localhost:3000",
         "http://127.0.0.1:3000",
-        "http://localhost:5173",  # Vite dev server
+        "http://localhost:5173",
         "http://127.0.0.1:5173",
-        "https://*.netlify.app",  # Netlify domains
-        "https://incandescent-pixie-7c87ba.netlify.app"  # Your Netlify URL
+        "https://*.netlify.app",
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Request logging middleware
+
+# Security headers middleware
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+    if request.url.scheme == "https":
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    return response
+
+
+# Request logging middleware (no sensitive data)
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     start_time = time.time()
-    
-    # Log incoming request
-    logger.info(f"[REQUEST] {request.method} {request.url.path}")
-    logger.info(f"[REQUEST] Origin: {request.headers.get('origin', 'No origin')}")
-    logger.info(f"[REQUEST] Content-Type: {request.headers.get('content-type', 'No content-type')}")
-    logger.info(f"[REQUEST] User-Agent: {request.headers.get('user-agent', 'No user-agent')[:100]}")
-    
-    # Process request
     response = await call_next(request)
-    
-    # Log response
-    process_time = time.time() - start_time
-    logger.info(f"[RESPONSE] {response.status_code} ({process_time:.3f}s)")
-    
+    duration = time.time() - start_time
+    logger.info(f"{request.method} {request.url.path} -> {response.status_code} ({duration:.3f}s)")
     return response
 
-# Log startup information
-logger.info("[STARTUP] Expense Tracker API starting up...")
-logger.info(f"[STARTUP] CORS enabled for: localhost:3000, localhost:5173 (and 127.0.0.1 variants)")
-logger.info(f"[STARTUP] Supabase URL: {os.getenv('SUPABASE_URL')}")
-logger.info(f"[STARTUP] Supabase Key configured: {bool(os.getenv('SUPABASE_KEY'))}")
 
-# Supabase client (only create if we have the required config)
-supabase_url = os.getenv("SUPABASE_URL")
-supabase_key = os.getenv("SUPABASE_KEY")
+# ---------------------------------------------------------------------------
+# Include modular API routers
+# ---------------------------------------------------------------------------
+try:
+    from app.api.monitoring import router as monitoring_router
 
-logger.info("🔧 [STARTUP] Authentication Configuration:")
-logger.info(f"🔧 [STARTUP] Database Mode: {settings.database_mode}")
-logger.info(f"🔧 [STARTUP] Supabase URL: {supabase_url}")
-logger.info(f"🔧 [STARTUP] Supabase Key configured: {bool(supabase_key)}")
+    app.include_router(monitoring_router, prefix="/api/v1/monitoring", tags=["monitoring"])
+except ImportError as e:
+    logger.warning(f"Could not load monitoring router: {e}")
 
-if supabase_url and supabase_key:
-    try:
-        supabase: Client = create_client(supabase_url, supabase_key)
-        logger.info("🔧 [STARTUP] ✅ Supabase client created successfully")
-    except Exception as e:
-        logger.error(f"🔧 [STARTUP] ❌ Failed to create Supabase client: {e}")
-        supabase = None
-else:
-    supabase = None
-    logger.warning("🔧 [STARTUP] ⚠️ Supabase client not initialized - missing URL or key")
-    if not supabase_url:
-        logger.warning("🔧 [STARTUP] Missing SUPABASE_URL environment variable")
-    if not supabase_key:
-        logger.warning("🔧 [STARTUP] Missing SUPABASE_KEY environment variable")
+try:
+    from app.api.budgets import router as budgets_router
 
-# Security
-security = HTTPBearer(auto_error=False)
+    app.include_router(budgets_router)
+    logger.info("Budgets router loaded")
+except ImportError as e:
+    logger.warning(f"Could not load budgets router: {e}")
 
-# Pydantic models
+try:
+    from app.api.analytics import router as analytics_router
+
+    app.include_router(analytics_router)
+    logger.info("Analytics router loaded")
+except ImportError as e:
+    logger.warning(f"Could not load analytics router: {e}")
+
+try:
+    from app.api.recurring_expenses import router as recurring_expenses_router
+
+    app.include_router(recurring_expenses_router, prefix="/api")
+    logger.info("Recurring expenses router loaded")
+except ImportError as e:
+    logger.warning(f"Could not load recurring expenses router: {e}")
+
+try:
+    from app.api.export import router as export_router
+
+    app.include_router(export_router, prefix="/api")
+    logger.info("Export router loaded")
+except ImportError as e:
+    logger.warning(f"Could not load export router: {e}")
+
+try:
+    from app.api.accounts import router as accounts_router
+
+    app.include_router(accounts_router, prefix="/api")
+    logger.info("Accounts router loaded")
+except ImportError as e:
+    logger.warning(f"Could not load accounts router: {e}")
+
+try:
+    from app.api.attachments import router as attachments_router
+
+    app.include_router(attachments_router, prefix="/api")
+    logger.info("Attachments router loaded")
+except ImportError as e:
+    logger.warning(f"Could not load attachments router: {e}")
+
+try:
+    from app.api.websocket import router as websocket_router
+
+    app.include_router(websocket_router, prefix="/api")
+    logger.info("WebSocket router loaded")
+except ImportError as e:
+    logger.warning(f"Could not load websocket router: {e}")
+
+try:
+    from app.api.security import router as security_router
+
+    app.include_router(security_router, prefix="/api")
+    logger.info("Security router loaded")
+except ImportError as e:
+    logger.warning(f"Could not load security router: {e}")
+
+
+# ---------------------------------------------------------------------------
+# Pydantic models for inline routes
+# ---------------------------------------------------------------------------
 class UserRegister(BaseModel):
     email: str
     password: str
     full_name: Optional[str] = None
 
+
 class UserLogin(BaseModel):
     email: str
     password: str
 
+
 class ResendConfirmationRequest(BaseModel):
     email: str
+
 
 class UserResponse(BaseModel):
     id: str
@@ -214,17 +235,19 @@ class UserResponse(BaseModel):
     full_name: Optional[str] = None
     created_at: str
 
+
 class AuthResponse(BaseModel):
     user: UserResponse
     access_token: str
     token_type: str = "bearer"
 
-# Expense models
+
 class ExpenseCreate(BaseModel):
     amount: float
     description: str
     category: str
     date: Optional[str] = None
+
 
 class ExpenseResponse(BaseModel):
     id: str
@@ -235,472 +258,243 @@ class ExpenseResponse(BaseModel):
     created_at: str
     user_id: str
 
+
 class CategoryResponse(BaseModel):
     name: str
     total_expenses: float
     expense_count: int
 
-# Categories for expense classification
+
+# Default categories
 categories = ["Food", "Transportation", "Entertainment", "Utilities", "Healthcare", "Shopping", "Other"]
 
-# Auth dependency for Supabase JWT tokens
-async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    """Get current user from Supabase JWT token."""
-    logger.info("🔐 [AUTH] Authentication attempt started")
-    logger.info(f"🔐 [AUTH] Supabase URL: {supabase_url}")
-    logger.info(f"🔐 [AUTH] Supabase client available: {supabase is not None}")
-    logger.info(f"🔐 [AUTH] Database mode: {settings.database_mode}")
-    
-    if not credentials:
-        logger.warning("🔐 [AUTH] No credentials provided")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not authenticated"
-        )
-    
-    try:
-        token = credentials.credentials
-        logger.info(f"🔐 [AUTH] Token received (length: {len(token)})")
-        logger.info(f"🔐 [AUTH] Token preview: {token[:20]}...")
-        
-        # Check if Supabase client is available
-        if supabase is None:
-            logger.error("🔐 [AUTH] Supabase client is None - cannot authenticate")
-            logger.error(f"🔐 [AUTH] SUPABASE_URL: {supabase_url}")
-            logger.error(f"🔐 [AUTH] SUPABASE_KEY configured: {bool(supabase_key)}")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Authentication service unavailable"
-            )
-        
-        # Try Supabase JWT verification
-        logger.info("🔐 [AUTH] Attempting Supabase JWT verification...")
-        try:
-            user_response = supabase.auth.get_user(token)
-            logger.info(f"🔐 [AUTH] Supabase response received: {bool(user_response)}")
-            logger.info(f"🔐 [AUTH] User object present: {bool(user_response.user if user_response else False)}")
-            
-            if user_response and user_response.user:
-                logger.info(f"🔐 [AUTH] ✅ Supabase authentication successful for user: {user_response.user.email}")
-                return {
-                    "id": user_response.user.id,
-                    "email": user_response.user.email
-                }
-            else:
-                logger.warning("🔐 [AUTH] Supabase returned no user object")
-        except Exception as supabase_error:
-            logger.warning(f"🔐 [AUTH] Supabase token verification failed: {type(supabase_error).__name__}: {supabase_error}")
-        
-        # Try manual JWT decoding as fallback
-        logger.info("🔐 [AUTH] Attempting manual JWT decoding as fallback...")
-        try:
-            payload = jwt.decode(token, supabase_key, algorithms=["HS256"], options={"verify_signature": False})
-            user_id = payload.get("sub")
-            email = payload.get("email")
-            
-            logger.info(f"🔐 [AUTH] JWT payload decoded - user_id: {bool(user_id)}, email: {bool(email)}")
-            
-            if user_id and email:
-                logger.info(f"🔐 [AUTH] ✅ Manual JWT authentication successful for user: {email}")
-                return {"id": user_id, "email": email}
-            else:
-                logger.warning("🔐 [AUTH] JWT payload missing required fields")
-        except Exception as jwt_error:
-            logger.warning(f"🔐 [AUTH] Manual JWT decoding failed: {type(jwt_error).__name__}: {jwt_error}")
-        
-        logger.error("🔐 [AUTH] ❌ All authentication methods failed")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token"
-        )
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"🔐 [AUTH] ❌ Unexpected authentication error: {type(e).__name__}: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication failed"
-        )
 
-# Routes
+# ---------------------------------------------------------------------------
+# Health & root
+# ---------------------------------------------------------------------------
 @app.get("/")
 async def root():
-    """Root endpoint."""
     return {"message": "Expense Tracker API is running!"}
+
 
 @app.get("/health")
 async def health_check():
-    """Simple health check endpoint for load balancers."""
     try:
         from app.monitoring.health import health_checker
-        
-        # Run a quick database health check
-        db_result = await health_checker.run_check("database")
-        
-        if db_result.status.value == "healthy":
-            return {"status": "healthy", "message": "API is operational"}
-        elif db_result.status.value == "degraded":
-            return {"status": "degraded", "message": "API is operational but degraded"}
-        else:
-            return {"status": "unhealthy", "message": "API has health issues"}
-            
-    except Exception as e:
-        logger.error(f"Health check failed: {e}")
-        return {"status": "unhealthy", "message": "Health check failed"}
 
+        db_result = await health_checker.run_check("database")
+        status_value = db_result.status.value
+        if status_value == "healthy":
+            return {"status": "healthy", "message": "API is operational"}
+        elif status_value == "degraded":
+            return {"status": "degraded", "message": "API is operational but degraded"}
+        return {"status": "unhealthy", "message": "API has health issues"}
+    except Exception:
+        return {"status": "healthy", "message": "API is running"}
+
+
+# ---------------------------------------------------------------------------
+# Auth routes (Supabase Auth)
+# ---------------------------------------------------------------------------
 @app.post("/api/v1/auth/register", response_model=AuthResponse)
 async def register(user_data: UserRegister):
-    """Register a new user."""
-    logger.info(f"📝 [REGISTER] Registration attempt for email: {user_data.email}")
-    logger.info(f"📝 [REGISTER] Full name provided: {user_data.full_name}")
-    logger.info(f"📝 [REGISTER] Password length: {len(user_data.password) if user_data.password else 0}")
-    
-    # Check Supabase availability
+    """Register a new user via Supabase Auth."""
     if supabase is None:
-        logger.error("📝 [REGISTER] ❌ Supabase client not available")
-        logger.error(f"📝 [REGISTER] SUPABASE_URL: {supabase_url}")
-        logger.error(f"📝 [REGISTER] SUPABASE_KEY configured: {bool(supabase_key)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Registration service unavailable"
-        )
-    
+        raise HTTPException(status_code=500, detail="Registration service unavailable")
+
     try:
-        # Log Supabase configuration
-        logger.info(f"📝 [REGISTER] Supabase URL: {supabase_url}")
-        logger.info(f"📝 [REGISTER] Supabase Key configured: {bool(supabase_key)}")
-        logger.info(f"📝 [REGISTER] Database mode: {settings.database_mode}")
-        
-        # Prepare registration data
-        registration_data = {
+        response = supabase.auth.sign_up({
             "email": user_data.email,
             "password": user_data.password,
-            "options": {
-                "data": {
-                    "full_name": user_data.full_name
-                }
-            }
-        }
-        logger.info(f"[SUPABASE] Sending registration data for: {registration_data['email']}")
-        
-        # Register user with Supabase Auth
-        response = supabase.auth.sign_up(registration_data)
-        
-        logger.info(f"[SUPABASE] Response received")
-        logger.info(f"[SUPABASE] User created: {bool(response.user)}")
-        logger.info(f"[SUPABASE] Session created: {bool(response.session)}")
-        
+            "options": {"data": {"full_name": user_data.full_name}},
+        })
+
         if response.user:
-            logger.info(f"[SUCCESS] User registered successfully: {response.user.id}")
-            logger.info(f"[SUCCESS] User email: {response.user.email}")
-            
-            user_response = UserResponse(
-                id=response.user.id,
-                email=response.user.email,
-                full_name=user_data.full_name,
-                created_at=datetime.now().isoformat()
-            )
-            
-            auth_response = AuthResponse(
-                user=user_response,
+            return AuthResponse(
+                user=UserResponse(
+                    id=response.user.id,
+                    email=response.user.email,
+                    full_name=user_data.full_name,
+                    created_at=datetime.now().isoformat(),
+                ),
                 access_token=response.session.access_token if response.session else "",
-                token_type="bearer"
             )
-            
-            logger.info(f"[SUCCESS] Registration completed successfully for: {user_data.email}")
-            return auth_response
-        else:
-            logger.error(f"[ERROR] Supabase returned no user object for: {user_data.email}")
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Registration failed - no user created"
-            )
-            
+        raise HTTPException(status_code=400, detail="Registration failed - no user created")
+
     except HTTPException:
-        # Re-raise HTTP exceptions as-is
         raise
     except Exception as e:
-        logger.error(f"[ERROR] Registration exception for {user_data.email}: {type(e).__name__}: {str(e)}")
-        logger.error(f"[ERROR] Exception details: {repr(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Registration failed: {str(e)}"
-        )
-
+        error_msg = str(e).lower()
+        if "already registered" in error_msg or "already been registered" in error_msg:
+            raise HTTPException(status_code=400, detail="An account with this email already exists.")
+        raise HTTPException(status_code=400, detail=f"Registration failed: {str(e)}")
 
 
 @app.post("/api/v1/auth/login", response_model=AuthResponse)
 async def login(user_data: UserLogin):
-    """Login user."""
-    logger.info(f"🔑 [LOGIN] Login attempt for email: {user_data.email}")
-    logger.info(f"🔑 [LOGIN] Password length: {len(user_data.password) if user_data.password else 0}")
-    logger.info(f"🔑 [LOGIN] Supabase URL: {supabase_url}")
-    logger.info(f"🔑 [LOGIN] Supabase client available: {supabase is not None}")
-    logger.info(f"🔑 [LOGIN] Database mode: {settings.database_mode}")
-    
-    # Check Supabase availability
+    """Login via Supabase Auth."""
     if supabase is None:
-        logger.error("🔑 [LOGIN] ❌ Supabase client not available")
-        logger.error(f"🔑 [LOGIN] SUPABASE_URL: {supabase_url}")
-        logger.error(f"🔑 [LOGIN] SUPABASE_KEY configured: {bool(supabase_key)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Login service unavailable"
-        )
-    
+        raise HTTPException(status_code=500, detail="Login service unavailable")
+
     try:
-        # Prepare login data
-        login_data = {
+        response = supabase.auth.sign_in_with_password({
             "email": user_data.email,
-            "password": user_data.password
-        }
-        logger.info(f"[SUPABASE] Sending login request for: {login_data['email']}")
-        
-        # Login with Supabase Auth
-        response = supabase.auth.sign_in_with_password(login_data)
-        
-        logger.info(f"[SUPABASE] Login response received")
-        logger.info(f"[SUPABASE] User object: {bool(response.user)}")
-        logger.info(f"[SUPABASE] Session object: {bool(response.session)}")
-        
-        if response.user:
-            logger.info(f"[SUPABASE] User ID: {response.user.id}")
-            logger.info(f"[SUPABASE] User email: {response.user.email}")
-            logger.info(f"[SUPABASE] User confirmed: {getattr(response.user, 'email_confirmed_at', 'N/A')}")
-        
-        if response.session:
-            logger.info(f"[SUPABASE] Access token present: {bool(response.session.access_token)}")
-            logger.info(f"[SUPABASE] Token type: {getattr(response.session, 'token_type', 'N/A')}")
-        
+            "password": user_data.password,
+        })
+
         if response.user and response.session:
-            logger.info(f"[SUCCESS] Login successful for: {response.user.email}")
-            
-            user_response = UserResponse(
-                id=response.user.id,
-                email=response.user.email,
-                full_name=response.user.user_metadata.get("full_name") if response.user.user_metadata else None,
-                created_at=response.user.created_at
-            )
-            
-            auth_response = AuthResponse(
-                user=user_response,
+            return AuthResponse(
+                user=UserResponse(
+                    id=response.user.id,
+                    email=response.user.email,
+                    full_name=(response.user.user_metadata or {}).get("full_name"),
+                    created_at=response.user.created_at,
+                ),
                 access_token=response.session.access_token,
-                token_type="bearer"
             )
-            
-            logger.info(f"[SUCCESS] Login completed successfully for: {user_data.email}")
-            return auth_response
         elif response.user and not response.session:
-            # User exists but no session - likely email not confirmed
-            email_confirmed = getattr(response.user, 'email_confirmed_at', None)
-            logger.error(f"[ERROR] User exists but no session created")
-            logger.error(f"[ERROR] Email confirmed at: {email_confirmed}")
-            
-            if not email_confirmed:
-                logger.info(f"[AUTH] Email not confirmed for: {user_data.email}")
+            if not getattr(response.user, "email_confirmed_at", None):
                 raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Please check your email and confirm your account before logging in."
+                    status_code=403,
+                    detail="Please check your email and confirm your account before logging in.",
                 )
-            else:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Authentication failed. Please try again."
-                )
+            raise HTTPException(status_code=401, detail="Authentication failed. Please try again.")
         else:
-            logger.error(f"[ERROR] Login failed - missing user or session")
-            logger.error(f"[ERROR] User present: {bool(response.user)}")
-            logger.error(f"[ERROR] Session present: {bool(response.session)}")
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid email or password. Please check your credentials and try again."
-            )
-            
+            raise HTTPException(status_code=401, detail="Invalid email or password.")
+
     except HTTPException:
-        # Re-raise HTTP exceptions as-is
         raise
     except Exception as e:
-        logger.error(f"[ERROR] Login exception for {user_data.email}: {type(e).__name__}: {str(e)}")
-        logger.error(f"[ERROR] Exception details: {repr(e)}")
-        
-        # Parse Supabase error messages to provide better user feedback
-        error_message = str(e).lower()
-        
-        if "email not confirmed" in error_message or "email_not_confirmed" in error_message:
-            logger.info(f"[AUTH] Email not confirmed for: {user_data.email}")
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Please check your email and confirm your account before logging in."
-            )
-        elif "invalid login credentials" in error_message or "invalid_credentials" in error_message:
-            logger.info(f"[AUTH] Invalid credentials for: {user_data.email}")
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid email or password. Please check your credentials and try again."
-            )
-        elif "user not found" in error_message or "user_not_found" in error_message:
-            logger.info(f"[AUTH] User not found: {user_data.email}")
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="No account found with this email address. Please register first."
-            )
-        elif "too many requests" in error_message or "rate_limit" in error_message:
-            logger.info(f"[AUTH] Rate limit exceeded for: {user_data.email}")
-            raise HTTPException(
-                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail="Too many login attempts. Please wait a moment and try again."
-            )
-        else:
-            # Generic error for unknown issues
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Login failed. Please check your credentials and try again."
-            )
+        error_msg = str(e).lower()
+        if "email not confirmed" in error_msg or "email_not_confirmed" in error_msg:
+            raise HTTPException(status_code=403, detail="Please check your email and confirm your account.")
+        if "invalid login credentials" in error_msg or "invalid_credentials" in error_msg:
+            raise HTTPException(status_code=401, detail="Invalid email or password.")
+        if "user not found" in error_msg:
+            raise HTTPException(status_code=404, detail="No account found with this email. Please register first.")
+        if "too many requests" in error_msg or "rate_limit" in error_msg:
+            raise HTTPException(status_code=429, detail="Too many login attempts. Please wait and try again.")
+        raise HTTPException(status_code=401, detail="Login failed. Please check your credentials.")
+
 
 @app.post("/api/v1/auth/resend-confirmation")
 async def resend_confirmation(request: ResendConfirmationRequest):
     """Resend email confirmation."""
-    logger.info(f"[AUTH] Resend confirmation request for: {request.email}")
-    
     try:
-        # Resend confirmation email
-        response = supabase.auth.resend({
-            "type": "signup",
-            "email": request.email
-        })
-        
-        logger.info(f"[SUCCESS] Confirmation email resent to: {request.email}")
-        return {
-            "message": "Confirmation email sent. Please check your inbox and spam folder.",
-            "email": request.email
-        }
-        
-    except Exception as e:
-        logger.error(f"[ERROR] Failed to resend confirmation to {request.email}: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Failed to resend confirmation email. Please try again later."
-        )
+        supabase.auth.resend({"type": "signup", "email": request.email})
+        return {"message": "Confirmation email sent. Please check your inbox and spam folder.", "email": request.email}
+    except Exception:
+        raise HTTPException(status_code=400, detail="Failed to resend confirmation email.")
+
 
 @app.get("/api/v1/auth/me", response_model=UserResponse)
-async def get_me(current_user = Depends(get_current_user)):
+async def get_me(current_user: CurrentUser = Depends(get_current_user)):
     """Get current user info."""
     return UserResponse(
-        id=current_user["id"],
-        email=current_user["email"],
+        id=str(current_user.id),
+        email=current_user.email,
         full_name=None,
-        created_at=datetime.now().isoformat()
+        created_at=datetime.now().isoformat(),
     )
 
 
-
-# Expense endpoints
+# ---------------------------------------------------------------------------
+# Expense CRUD (Supabase REST)
+# ---------------------------------------------------------------------------
 @app.post("/api/v1/expenses", response_model=ExpenseResponse)
-async def create_expense(expense: ExpenseCreate, current_user = Depends(get_current_user)):
+async def create_expense(expense: ExpenseCreate, current_user: CurrentUser = Depends(get_current_user)):
     """Create a new expense."""
-    user_id = current_user["id"]
-    now = datetime.now().isoformat()
-    
+    user_id = str(current_user.id)
     expense_data = {
         "user_id": user_id,
         "amount": expense.amount,
         "description": expense.description,
         "category": expense.category,
-        "date": expense.date or now.split("T")[0]
+        "date": expense.date or datetime.now().strftime("%Y-%m-%d"),
     }
-    
     try:
-        result = supabase.table('expenses').insert(expense_data).execute()
-        if result.data and len(result.data) > 0:
-            created_expense = result.data[0]
-            return ExpenseResponse(
-                id=created_expense["id"],
-                amount=created_expense["amount"],
-                description=created_expense["description"],
-                category=created_expense["category"],
-                date=created_expense["date"],
-                created_at=created_expense["created_at"],
-                user_id=created_expense["user_id"]
-            )
-        else:
-            raise HTTPException(status_code=500, detail="Failed to create expense")
+        result = supabase.table("expenses").insert(expense_data).execute()
+        if result.data:
+            return ExpenseResponse(**result.data[0])
+        raise HTTPException(status_code=500, detail="Failed to create expense")
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error creating expense: {e}")
         raise HTTPException(status_code=500, detail="Failed to create expense")
 
+
 @app.get("/api/v1/expenses")
-async def get_expenses(current_user = Depends(get_current_user)):
+async def get_expenses(current_user: CurrentUser = Depends(get_current_user)):
     """Get all expenses for current user."""
-    user_id = current_user["id"]
-    
     try:
-        result = supabase.table('expenses').select('*').eq('user_id', user_id).execute()
+        result = supabase.table("expenses").select("*").eq("user_id", str(current_user.id)).execute()
         return result.data or []
     except Exception as e:
-        logger.error(f"Error fetching expenses from Supabase: {e}")
+        logger.error(f"Error fetching expenses: {e}")
         return []
 
+
 @app.get("/api/v1/expenses/{expense_id}", response_model=ExpenseResponse)
-async def get_expense(expense_id: str, current_user = Depends(get_current_user)):
+async def get_expense(expense_id: str, current_user: CurrentUser = Depends(get_current_user)):
     """Get a specific expense."""
-    user_id = current_user["id"]
-    
     try:
-        result = supabase.table('expenses').select('*').eq('id', expense_id).eq('user_id', user_id).execute()
-        if result.data and len(result.data) > 0:
-            expense = result.data[0]
-            return ExpenseResponse(**expense)
-        else:
-            raise HTTPException(status_code=404, detail="Expense not found")
+        result = (
+            supabase.table("expenses")
+            .select("*")
+            .eq("id", expense_id)
+            .eq("user_id", str(current_user.id))
+            .execute()
+        )
+        if result.data:
+            return ExpenseResponse(**result.data[0])
+        raise HTTPException(status_code=404, detail="Expense not found")
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error fetching expense: {e}")
         raise HTTPException(status_code=500, detail="Failed to fetch expense")
 
+
 @app.put("/api/v1/expenses/{expense_id}", response_model=ExpenseResponse)
-async def update_expense(expense_id: str, expense: ExpenseCreate, current_user = Depends(get_current_user)):
+async def update_expense(
+    expense_id: str,
+    expense: ExpenseCreate,
+    current_user: CurrentUser = Depends(get_current_user),
+):
     """Update an expense."""
-    user_id = current_user["id"]
-    
+    user_id = str(current_user.id)
     try:
-        # First check if expense exists and belongs to user
-        existing = supabase.table('expenses').select('*').eq('id', expense_id).eq('user_id', user_id).execute()
-        if not existing.data or len(existing.data) == 0:
+        existing = supabase.table("expenses").select("*").eq("id", expense_id).eq("user_id", user_id).execute()
+        if not existing.data:
             raise HTTPException(status_code=404, detail="Expense not found")
-        
-        # Update the expense
+
         update_data = {
             "amount": expense.amount,
             "description": expense.description,
             "category": expense.category,
-            "date": expense.date or existing.data[0]["date"]
+            "date": expense.date or existing.data[0]["date"],
         }
-        
-        result = supabase.table('expenses').update(update_data).eq('id', expense_id).eq('user_id', user_id).execute()
-        if result.data and len(result.data) > 0:
-            updated_expense = result.data[0]
-            return ExpenseResponse(**updated_expense)
-        else:
-            raise HTTPException(status_code=500, detail="Failed to update expense")
+        result = supabase.table("expenses").update(update_data).eq("id", expense_id).eq("user_id", user_id).execute()
+        if result.data:
+            return ExpenseResponse(**result.data[0])
+        raise HTTPException(status_code=500, detail="Failed to update expense")
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error updating expense: {e}")
         raise HTTPException(status_code=500, detail="Failed to update expense")
 
+
 @app.delete("/api/v1/expenses/{expense_id}")
-async def delete_expense(expense_id: str, current_user = Depends(get_current_user)):
+async def delete_expense(expense_id: str, current_user: CurrentUser = Depends(get_current_user)):
     """Delete an expense."""
-    user_id = current_user["id"]
-    
+    user_id = str(current_user.id)
     try:
-        # First check if expense exists and belongs to user
-        existing = supabase.table('expenses').select('id').eq('id', expense_id).eq('user_id', user_id).execute()
-        if not existing.data or len(existing.data) == 0:
+        existing = supabase.table("expenses").select("id").eq("id", expense_id).eq("user_id", user_id).execute()
+        if not existing.data:
             raise HTTPException(status_code=404, detail="Expense not found")
-        
-        # Delete the expense
-        result = supabase.table('expenses').delete().eq('id', expense_id).eq('user_id', user_id).execute()
+        supabase.table("expenses").delete().eq("id", expense_id).eq("user_id", user_id).execute()
         return {"message": "Expense deleted successfully"}
     except HTTPException:
         raise
@@ -708,387 +502,258 @@ async def delete_expense(expense_id: str, current_user = Depends(get_current_use
         logger.error(f"Error deleting expense: {e}")
         raise HTTPException(status_code=500, detail="Failed to delete expense")
 
-# Category endpoints
+
+# ---------------------------------------------------------------------------
+# Categories & Summary (Supabase REST)
+# ---------------------------------------------------------------------------
 @app.get("/api/v1/categories")
-async def get_categories(current_user = Depends(get_current_user)):
-    """Get all categories with expense summaries for current user."""
-    user_id = current_user["id"]
-    
+async def get_categories(current_user: CurrentUser = Depends(get_current_user)):
+    """Get all categories with expense summaries."""
     try:
-        # Get all expenses for user
-        result = supabase.table('expenses').select('*').eq('user_id', user_id).execute()
+        result = supabase.table("expenses").select("*").eq("user_id", str(current_user.id)).execute()
         user_expenses = result.data or []
-        
-        category_summaries = []
-        for category in categories:
-            category_expenses = [exp for exp in user_expenses if exp["category"] == category]
-            total_amount = sum(float(exp["amount"]) for exp in category_expenses)
-            
-            category_summaries.append(CategoryResponse(
-                name=category,
-                total_expenses=total_amount,
-                expense_count=len(category_expenses)
-            ))
-        
-        return category_summaries
+
+        return [
+            CategoryResponse(
+                name=cat,
+                total_expenses=sum(float(e["amount"]) for e in user_expenses if e["category"] == cat),
+                expense_count=sum(1 for e in user_expenses if e["category"] == cat),
+            )
+            for cat in categories
+        ]
     except Exception as e:
         logger.error(f"Error fetching categories: {e}")
         return []
 
+
 @app.get("/api/v1/summary")
-async def get_summary(current_user = Depends(get_current_user)):
+async def get_summary(current_user: CurrentUser = Depends(get_current_user)):
     """Get expense summary for current user."""
-    user_id = current_user["id"]
-    
     try:
-        # Get all expenses for user
-        result = supabase.table('expenses').select('*').eq('user_id', user_id).order('created_at', desc=True).execute()
+        result = (
+            supabase.table("expenses")
+            .select("*")
+            .eq("user_id", str(current_user.id))
+            .order("created_at", desc=True)
+            .execute()
+        )
         user_expenses = result.data or []
-        
-        total_expenses = len(user_expenses)
-        total_amount = sum(float(exp["amount"]) for exp in user_expenses)
-        categories_used = len(set(exp["category"] for exp in user_expenses)) if user_expenses else 0
-        
         return {
-            "total_expenses": total_expenses,
-            "total_amount": total_amount,
-            "categories_used": categories_used,
-            "recent_expenses": user_expenses[:5]  # First 5 (most recent due to desc order)
+            "total_expenses": len(user_expenses),
+            "total_amount": sum(float(e["amount"]) for e in user_expenses),
+            "categories_used": len({e["category"] for e in user_expenses}),
+            "recent_expenses": user_expenses[:5],
         }
     except Exception as e:
         logger.error(f"Error fetching summary: {e}")
-        return {
-            "total_expenses": 0,
-            "total_amount": 0,
-            "categories_used": 0,
-            "recent_expenses": []
-        }
+        return {"total_expenses": 0, "total_amount": 0, "categories_used": 0, "recent_expenses": []}
 
-# Note: Budgets, recurring expenses, and analytics endpoints removed
-# These features are not implemented yet and should return proper 404s
 
-# Statement Import endpoints with real PDF parsing functionality
-from fastapi import UploadFile, File, Form
-import tempfile
-import os
-import uuid
-from typing import Dict, Any
-
-# In-memory storage for uploaded files and parse results
+# ---------------------------------------------------------------------------
+# Statement Import (inline, Supabase REST)
+# ---------------------------------------------------------------------------
 uploaded_files: Dict[str, Dict[str, Any]] = {}
 parse_results: Dict[str, Dict[str, Any]] = {}
+
 
 @app.post("/api/statement-import/upload")
 async def upload_statement(
     file: UploadFile = File(...),
     bank_hint: Optional[str] = Form(None),
-    current_user = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user),
 ):
     """Upload a statement file for processing."""
-    try:
-        # Basic file validation
-        if not file.filename:
-            raise HTTPException(status_code=400, detail="No file provided")
-        
-        # Check file size (50MB limit)
-        if file.size and file.size > 50 * 1024 * 1024:
-            raise HTTPException(status_code=400, detail="File size exceeds 50MB limit")
-        
-        # Check file extension
-        file_extension = file.filename.split('.')[-1].lower()
-        supported_extensions = ['pdf', 'csv', 'xlsx', 'xls', 'ofx', 'qif', 'txt']
-        
-        if file_extension not in supported_extensions:
-            raise HTTPException(
-                status_code=400, 
-                detail=f"Unsupported file format: {file_extension}. Supported: {', '.join(supported_extensions)}"
-            )
-        
-        # Generate unique upload ID
-        upload_id = str(uuid.uuid4())
-        
-        # Save file temporarily
-        temp_file = tempfile.NamedTemporaryFile(
-            delete=False, 
-            suffix=f".{file_extension}",
-            prefix=f"statement_{current_user['id']}_"
-        )
-        
-        # Read and save file content
-        content = await file.read()
-        temp_file.write(content)
-        temp_file.close()
-        
-        # Store upload info
-        uploaded_files[upload_id] = {
-            "user_id": current_user["id"],
-            "filename": file.filename,
-            "file_size": len(content),
-            "file_path": temp_file.name,
-            "file_type": file_extension,
-            "bank_hint": bank_hint,
-            "upload_time": datetime.now().isoformat()
-        }
-        
-        # Detect parser
-        detected_parser = None
-        if file_extension == "pdf":
-            detected_parser = "pdf_parser"
-        elif file_extension in ["csv", "txt"]:
-            detected_parser = "csv_parser"
-        elif file_extension in ["xlsx", "xls"]:
-            detected_parser = "excel_parser"
-        elif file_extension in ["ofx", "qfx"]:
-            detected_parser = "ofx_parser"
-        elif file_extension == "qif":
-            detected_parser = "qif_parser"
-        
-        return {
-            "upload_id": upload_id,
-            "filename": file.filename,
-            "file_size": len(content),
-            "file_type": file_extension,
-            "supported_format": True,
-            "detected_parser": detected_parser,
-            "validation_errors": []
-        }
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Upload error: {e}")
-        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="No file provided")
+    if file.size and file.size > 50 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File size exceeds 50MB limit")
+
+    ext = file.filename.rsplit(".", 1)[-1].lower()
+    supported = ["pdf", "csv", "xlsx", "xls", "ofx", "qif", "txt"]
+    if ext not in supported:
+        raise HTTPException(status_code=400, detail=f"Unsupported format: {ext}. Supported: {', '.join(supported)}")
+
+    upload_id = str(uuid.uuid4())
+    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=f".{ext}")
+    content = await file.read()
+    temp_file.write(content)
+    temp_file.close()
+
+    uploaded_files[upload_id] = {
+        "user_id": str(current_user.id),
+        "filename": file.filename,
+        "file_size": len(content),
+        "file_path": temp_file.name,
+        "file_type": ext,
+        "bank_hint": bank_hint,
+        "upload_time": datetime.now().isoformat(),
+    }
+
+    parser_map = {
+        "pdf": "pdf_parser", "csv": "csv_parser", "txt": "csv_parser",
+        "xlsx": "excel_parser", "xls": "excel_parser",
+        "ofx": "ofx_parser", "qfx": "ofx_parser", "qif": "qif_parser",
+    }
+    return {
+        "upload_id": upload_id, "filename": file.filename, "file_size": len(content),
+        "file_type": ext, "supported_format": True,
+        "detected_parser": parser_map.get(ext), "validation_errors": [],
+    }
+
 
 @app.post("/api/statement-import/preview/{upload_id}")
-async def preview_statement(upload_id: str, current_user = Depends(get_current_user)):
+async def preview_statement(upload_id: str, current_user: CurrentUser = Depends(get_current_user)):
     """Preview parsed transactions from uploaded statement."""
-    try:
-        # Check if upload exists
-        if upload_id not in uploaded_files:
-            raise HTTPException(status_code=404, detail="Upload not found")
-        
-        upload_info = uploaded_files[upload_id]
-        
-        # Verify user owns this upload
-        if upload_info["user_id"] != current_user["id"]:
-            raise HTTPException(status_code=403, detail="Access denied")
-        
-        # Parse the file using our PDF parser
-        if upload_info["file_type"] == "pdf":
-            from app.parsers.pdf_parser import PDFParser
-            from app.parsers.config import config_manager
-            
-            parser = PDFParser()
-            
-            # Load ČSOB configuration if bank hint suggests it
-            if upload_info.get("bank_hint") and "csob" in upload_info["bank_hint"].lower():
-                csob_config = config_manager.load_bank_config("csob_slovakia")
-                if csob_config and "pdf_config" in csob_config:
-                    parser.config.settings.update(csob_config["pdf_config"])
-            
-            # Parse the PDF
-            result = await parser.parse(upload_info["file_path"])
-            
-            # Convert transactions to API format
-            sample_transactions = []
-            for i, tx in enumerate(result.transactions[:10]):  # First 10 for preview
-                sample_transactions.append({
-                    "index": i,
-                    "date": tx.date.isoformat(),
-                    "description": tx.description,
-                    "amount": float(tx.amount),
-                    "merchant": tx.merchant,
-                    "category": tx.category,
-                    "account": tx.account or "Unknown",
-                    "reference": tx.reference or ""
-                })
-            
-            # Store parse result for later use
-            parse_results[upload_id] = {
-                "success": result.success,
-                "transactions": result.transactions,
-                "errors": result.errors,
-                "warnings": result.warnings,
-                "metadata": result.metadata
+    if upload_id not in uploaded_files:
+        raise HTTPException(status_code=404, detail="Upload not found")
+
+    info = uploaded_files[upload_id]
+    if info["user_id"] != str(current_user.id):
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    if info["file_type"] == "pdf":
+        from app.parsers.config import config_manager
+        from app.parsers.pdf_parser import PDFParser
+
+        parser = PDFParser()
+        if info.get("bank_hint") and "csob" in info["bank_hint"].lower():
+            csob_config = config_manager.load_bank_config("csob_slovakia")
+            if csob_config and "pdf_config" in csob_config:
+                parser.config.settings.update(csob_config["pdf_config"])
+
+        result = await parser.parse(info["file_path"])
+        sample = [
+            {
+                "index": i, "date": tx.date.isoformat(), "description": tx.description,
+                "amount": float(tx.amount), "merchant": tx.merchant, "category": tx.category,
+                "account": tx.account or "Unknown", "reference": tx.reference or "",
             }
-            
-            return {
-                "upload_id": upload_id,
-                "success": result.success,
-                "transaction_count": len(result.transactions),
-                "sample_transactions": sample_transactions,
-                "errors": result.errors,
-                "warnings": result.warnings,
-                "metadata": result.metadata
-            }
-        else:
-            # Return error for unsupported file types
-            return {
-                "upload_id": upload_id,
-                "success": False,
-                "transaction_count": 0,
-                "sample_transactions": [],
-                "errors": [f"File type '{upload_info['file_type']}' is not supported for parsing"],
-                "warnings": [],
-                "metadata": {"file_type": upload_info["file_type"]}
-            }
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Preview error: {e}")
-        raise HTTPException(status_code=500, detail=f"Preview failed: {str(e)}")
+            for i, tx in enumerate(result.transactions[:10])
+        ]
+        parse_results[upload_id] = {
+            "success": result.success, "transactions": result.transactions,
+            "errors": result.errors, "warnings": result.warnings, "metadata": result.metadata,
+        }
+        return {
+            "upload_id": upload_id, "success": result.success,
+            "transaction_count": len(result.transactions), "sample_transactions": sample,
+            "errors": result.errors, "warnings": result.warnings, "metadata": result.metadata,
+        }
+
+    return {
+        "upload_id": upload_id, "success": False, "transaction_count": 0,
+        "sample_transactions": [],
+        "errors": [f"File type '{info['file_type']}' is not yet supported for parsing"],
+        "warnings": [], "metadata": {"file_type": info["file_type"]},
+    }
+
 
 @app.post("/api/statement-import/analyze-duplicates/{upload_id}")
-async def analyze_duplicates(upload_id: str, current_user = Depends(get_current_user)):
+async def analyze_duplicates(upload_id: str, current_user: CurrentUser = Depends(get_current_user)):
     """Analyze transactions for potential duplicates."""
+    if upload_id not in parse_results:
+        raise HTTPException(status_code=404, detail="Parse result not found. Please preview first.")
+
+    pr = parse_results[upload_id]
+    user_id = str(current_user.id)
     try:
-        # Check if parse result exists
-        if upload_id not in parse_results:
-            raise HTTPException(status_code=404, detail="Parse result not found. Please preview first.")
-        
-        parse_result = parse_results[upload_id]
-        
-        # Simple duplicate analysis - check against existing expenses
-        try:
-            result = supabase.table('expenses').select('*').eq('user_id', current_user["id"]).execute()
-            user_expenses = result.data or []
-        except Exception as e:
-            logger.error(f"Error fetching expenses for duplicate analysis: {e}")
-            user_expenses = []
-        
-        analysis = []
-        for i, tx in enumerate(parse_result["transactions"]):
-            # Check for potential duplicates based on date, amount, and description
-            potential_duplicates = []
-            is_likely_duplicate = False
-            
-            for expense in user_expenses:
-                # Simple matching logic
-                date_match = expense.get("date") == tx.date.isoformat()[:10]
-                amount_match = abs(float(expense.get("amount", 0)) - float(tx.amount)) < 0.01
-                desc_similarity = tx.description.lower() in expense.get("description", "").lower()
-                
-                if date_match and amount_match:
-                    is_likely_duplicate = True
-                    potential_duplicates.append({
-                        "expense_id": expense.get("id"),
-                        "match_score": 0.9,
-                        "match_reasons": ["date_match", "amount_match"]
-                    })
-                elif desc_similarity and amount_match:
-                    potential_duplicates.append({
-                        "expense_id": expense.get("id"),
-                        "match_score": 0.7,
-                        "match_reasons": ["description_similarity", "amount_match"]
-                    })
-            
-            analysis.append({
-                "transaction_index": i,
-                "transaction": {
-                    "date": tx.date.isoformat(),
-                    "description": tx.description,
-                    "amount": float(tx.amount),
-                    "merchant": tx.merchant
-                },
-                "is_likely_duplicate": is_likely_duplicate,
-                "confidence_score": 0.9 if is_likely_duplicate else 0.1,
-                "potential_duplicates": potential_duplicates
-            })
-        
-        likely_duplicates = sum(1 for item in analysis if item["is_likely_duplicate"])
-        
-        return {
-            "upload_id": upload_id,
-            "total_transactions": len(analysis),
-            "likely_duplicates": likely_duplicates,
-            "analysis": analysis
-        }
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Duplicate analysis error: {e}")
-        raise HTTPException(status_code=500, detail=f"Duplicate analysis failed: {str(e)}")
+        result = supabase.table("expenses").select("*").eq("user_id", user_id).execute()
+        user_expenses = result.data or []
+    except Exception:
+        user_expenses = []
+
+    analysis = []
+    for i, tx in enumerate(pr["transactions"]):
+        potential_duplicates = []
+        is_dup = False
+        for exp in user_expenses:
+            date_match = exp.get("date") == tx.date.isoformat()[:10]
+            amount_match = abs(float(exp.get("amount", 0)) - float(tx.amount)) < 0.01
+            if date_match and amount_match:
+                is_dup = True
+                potential_duplicates.append({
+                    "expense_id": exp.get("id"), "match_score": 0.9,
+                    "match_reasons": ["date_match", "amount_match"],
+                })
+            elif tx.description.lower() in exp.get("description", "").lower() and amount_match:
+                potential_duplicates.append({
+                    "expense_id": exp.get("id"), "match_score": 0.7,
+                    "match_reasons": ["description_similarity", "amount_match"],
+                })
+
+        analysis.append({
+            "transaction_index": i,
+            "transaction": {
+                "date": tx.date.isoformat(), "description": tx.description,
+                "amount": float(tx.amount), "merchant": tx.merchant,
+            },
+            "is_likely_duplicate": is_dup,
+            "confidence_score": 0.9 if is_dup else 0.1,
+            "potential_duplicates": potential_duplicates,
+        })
+
+    return {
+        "upload_id": upload_id,
+        "total_transactions": len(analysis),
+        "likely_duplicates": sum(1 for a in analysis if a["is_likely_duplicate"]),
+        "analysis": analysis,
+    }
+
 
 @app.post("/api/statement-import/confirm/{upload_id}")
-async def confirm_import(upload_id: str, request: dict, current_user = Depends(get_current_user)):
+async def confirm_import(
+    upload_id: str, request: dict, current_user: CurrentUser = Depends(get_current_user),
+):
     """Confirm and execute the statement import."""
-    try:
-        # Check if parse result exists
-        if upload_id not in parse_results:
-            raise HTTPException(status_code=404, detail="Parse result not found")
-        
-        parse_result = parse_results[upload_id]
-        selected_transactions = request.get("selected_transactions", [])
-        
-        # If no specific transactions selected, import all
-        if not selected_transactions:
-            selected_transactions = list(range(len(parse_result["transactions"])))
-        
-        # Import selected transactions as expenses
-        user_id = current_user["id"]
-        imported_count = 0
-        skipped_count = 0
-        errors = []
-        
-        for i in selected_transactions:
-            if i >= len(parse_result["transactions"]):
-                continue
-                
-            tx = parse_result["transactions"][i]
-            
-            try:
-                # Create expense from transaction
-                expense_data = {
-                    "user_id": user_id,
-                    "description": tx.description,
-                    "amount": float(tx.amount),
-                    "category": tx.category or "Other",
-                    "date": tx.date.isoformat()[:10]
-                }
-                
-                # Save to Supabase using REST API
-                result = supabase.table('expenses').insert(expense_data).execute()
-                if result.data:
-                    imported_count += 1
-                else:
-                    errors.append(f"Failed to save transaction {i} to Supabase")
-                    skipped_count += 1
-                
-            except Exception as e:
-                errors.append(f"Failed to import transaction {i}: {str(e)}")
-                skipped_count += 1
-        
-        # Clean up temporary file
-        upload_info = uploaded_files.get(upload_id)
-        if upload_info and os.path.exists(upload_info["file_path"]):
-            try:
-                os.unlink(upload_info["file_path"])
-            except:
-                pass  # Ignore cleanup errors
-        
-        # Clean up stored data
-        if upload_id in uploaded_files:
-            del uploaded_files[upload_id]
-        if upload_id in parse_results:
-            del parse_results[upload_id]
-        
-        return {
-            "import_id": str(uuid.uuid4()),
-            "success": imported_count > 0,
-            "imported_count": imported_count,
-            "skipped_count": skipped_count,
-            "duplicate_count": 0,  # We don't auto-skip duplicates
-            "errors": errors
-        }
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Import confirmation error: {e}")
-        raise HTTPException(status_code=500, detail=f"Import confirmation failed: {str(e)}")
+    if upload_id not in parse_results:
+        raise HTTPException(status_code=404, detail="Parse result not found")
 
+    pr = parse_results[upload_id]
+    selected = request.get("selected_transactions", list(range(len(pr["transactions"]))))
+    user_id = str(current_user.id)
+    imported = 0
+    skipped = 0
+    errors = []
+
+    for i in selected:
+        if i >= len(pr["transactions"]):
+            continue
+        tx = pr["transactions"][i]
+        try:
+            result = supabase.table("expenses").insert({
+                "user_id": user_id, "description": tx.description,
+                "amount": float(tx.amount), "category": tx.category or "Other",
+                "date": tx.date.isoformat()[:10],
+            }).execute()
+            if result.data:
+                imported += 1
+            else:
+                skipped += 1
+                errors.append(f"Failed to save transaction {i}")
+        except Exception as e:
+            skipped += 1
+            errors.append(f"Failed to import transaction {i}: {str(e)}")
+
+    # Cleanup
+    info = uploaded_files.pop(upload_id, None)
+    parse_results.pop(upload_id, None)
+    if info and os.path.exists(info["file_path"]):
+        try:
+            os.unlink(info["file_path"])
+        except OSError:
+            pass
+
+    return {
+        "import_id": str(uuid.uuid4()), "success": imported > 0,
+        "imported_count": imported, "skipped_count": skipped,
+        "duplicate_count": 0, "errors": errors,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Entry point
+# ---------------------------------------------------------------------------
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000)

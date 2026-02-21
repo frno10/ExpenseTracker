@@ -21,6 +21,7 @@ mypy==1.15.0
 pre-commit==4.0.1
 
 # Additional utilities
+python-dotenv==1.0.1
 python-multipart==0.0.12
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
@@ -32,13 +33,12 @@ email-validator==2.2.0
 # Essential packages only for production
 requests==2.31.0
 
-# Statement parsing dependencies (optional - install separately if needed)
-# PyPDF2==3.0.1
-# pdfplumber==0.10.3
-# openpyxl==3.1.2
-# xlrd==2.0.1
-# ofxparse==0.21
-# python-magic==0.4.27
+# Statement parsing dependencies
+PyPDF2==3.0.1
+pdfplumber==0.10.3
+openpyxl==3.1.2
+xlrd==2.0.1
+ofxparse==0.21
 chardet==5.2.0
 
 # File security and validation (minimal)

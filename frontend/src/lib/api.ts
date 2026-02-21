@@ -190,9 +190,15 @@ class ApiClient {
     return {}
   }
 
-  async exportExpenses(params?: any) {
-    // Backend doesn't support export yet, return empty CSV
-    return new Blob(['Date,Description,Amount,Category\n'], { type: 'text/csv' })
+  async exportExpenses(_params?: any) {
+    // Fetch all expenses and generate CSV client-side
+    const expenses = await this.request('/expenses')
+    const rows = (expenses || []).map((e: any) => {
+      const escape = (val: string) => `"${String(val || '').replace(/"/g, '""')}"`
+      return [e.date, escape(e.description), e.amount, escape(e.category)].join(',')
+    })
+    const csv = ['Date,Description,Amount,Category', ...rows].join('\n')
+    return new Blob([csv], { type: 'text/csv' })
   }
 
   // Category and Account methods

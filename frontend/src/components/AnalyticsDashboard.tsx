@@ -1,56 +1,36 @@
-import { useState, useEffect } from 'react'
-import { TrendingUp, TrendingDown, DollarSign, Calendar, AlertTriangle, BarChart3 } from 'lucide-react'
+import { useState, useEffect, useMemo } from 'react'
+import { TrendingUp, TrendingDown, DollarSign, Calendar, BarChart3 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card'
-import { Badge } from './ui/badge'
 import { Button } from './ui/button'
 import { Progress } from './ui/progress'
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
+} from 'recharts'
+import { apiClient } from '../lib/api'
 
-interface DashboardSummary {
-  period: {
-    start_date: string
-    end_date: string
-    days: number
-  }
-  summary: {
-    total_spending: number
-    transaction_count: number
-    average_transaction: number
-    daily_average: number
-  }
-  trend: {
-    direction: 'up' | 'down' | 'stable'
-    change_amount: number
-    change_percentage: number
-  }
-  category_breakdown: Array<{
-    category: string
-    amount: number
-    count: number
-    percentage: number
-  }>
-  merchant_breakdown: Array<{
-    merchant: string
-    amount: number
-    count: number
-  }>
-  anomalies: Array<{
-    date: string
-    amount: number
-    category: string
-    merchant: string
-    anomaly_type: string
-    severity: string
-    description: string
-  }>
-  insights: string[]
+interface Expense {
+  id: string
+  amount: number
+  description: string
+  category: string
+  date: string
+}
+
+interface CategorySummary {
+  name: string
+  total_expenses: number
+  expense_count: number
 }
 
 interface AnalyticsDashboardProps {
   periodDays?: number
 }
 
+const CHART_COLORS = ['#6366f1', '#f43f5e', '#10b981', '#f59e0b', '#3b82f6', '#8b5cf6', '#64748b']
+
 export function AnalyticsDashboard({ periodDays = 30 }: AnalyticsDashboardProps) {
-  const [dashboardData, setDashboardData] = useState<DashboardSummary | null>(null)
+  const [expenses, setExpenses] = useState<Expense[]>([])
+  const [categories, setCategories] = useState<CategorySummary[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -61,74 +41,60 @@ export function AnalyticsDashboard({ periodDays = 30 }: AnalyticsDashboardProps)
   const loadDashboardData = async () => {
     setLoading(true)
     setError(null)
-    
     try {
-      const response = await fetch(`/api/analytics/dashboard?period_days=${periodDays}`, {
-        headers: {
-          // Add auth headers when authentication is implemented
-        }
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        setDashboardData(data)
-      } else {
-        throw new Error('Failed to load dashboard data')
-      }
+      const [expData, catData] = await Promise.all([
+        apiClient.getExpenses().catch(() => ({ items: [] })),
+        apiClient.getCategories().catch(() => [])
+      ])
+      setExpenses(expData.items || expData || [])
+      setCategories(catData || [])
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
+      setError(err instanceof Error ? err.message : 'Failed to load data')
     } finally {
       setLoading(false)
     }
   }
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount)
-  }
+  const filteredExpenses = useMemo(() => {
+    const cutoff = new Date()
+    cutoff.setDate(cutoff.getDate() - periodDays)
+    return expenses.filter(e => new Date(e.date) >= cutoff)
+  }, [expenses, periodDays])
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    })
-  }
+  const totalSpending = useMemo(
+    () => filteredExpenses.reduce((s, e) => s + Number(e.amount), 0),
+    [filteredExpenses]
+  )
 
-  const getTrendIcon = (direction: string) => {
-    switch (direction) {
-      case 'up':
-        return <TrendingUp className="h-4 w-4 text-red-500" />
-      case 'down':
-        return <TrendingDown className="h-4 w-4 text-green-500" />
-      default:
-        return <DollarSign className="h-4 w-4 text-gray-500" />
+  const trend = useMemo(() => {
+    const now = new Date()
+    const periodStart = new Date(now)
+    periodStart.setDate(periodStart.getDate() - periodDays)
+    const prevStart = new Date(periodStart)
+    prevStart.setDate(prevStart.getDate() - periodDays)
+
+    const prevTotal = expenses
+      .filter(e => {
+        const d = new Date(e.date)
+        return d >= prevStart && d < periodStart
+      })
+      .reduce((s, e) => s + Number(e.amount), 0)
+
+    if (prevTotal === 0) return { direction: 'stable' as const, pct: 0 }
+    const pct = ((totalSpending - prevTotal) / prevTotal) * 100
+    return {
+      direction: pct > 2 ? 'up' as const : pct < -2 ? 'down' as const : 'stable' as const,
+      pct: Math.round(pct)
     }
-  }
+  }, [expenses, totalSpending, periodDays])
 
-  const getTrendColor = (direction: string) => {
-    switch (direction) {
-      case 'up':
-        return 'text-red-600'
-      case 'down':
-        return 'text-green-600'
-      default:
-        return 'text-gray-600'
-    }
-  }
+  const categoryChartData = useMemo(
+    () => categories.filter(c => c.total_expenses > 0).sort((a, b) => b.total_expenses - a.total_expenses),
+    [categories]
+  )
 
-  const getSeverityBadge = (severity: string) => {
-    switch (severity) {
-      case 'high':
-        return <Badge variant="destructive" className="text-xs">High</Badge>
-      case 'medium':
-        return <Badge variant="outline" className="text-xs text-orange-600 border-orange-600">Medium</Badge>
-      default:
-        return <Badge variant="secondary" className="text-xs">Low</Badge>
-    }
-  }
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount)
 
   if (loading) {
     return (
@@ -154,7 +120,6 @@ export function AnalyticsDashboard({ periodDays = 30 }: AnalyticsDashboardProps)
       <Card>
         <CardContent className="pt-6">
           <div className="text-center">
-            <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
             <h3 className="text-lg font-semibold mb-2">Error Loading Analytics</h3>
             <p className="text-muted-foreground mb-4">{error}</p>
             <Button onClick={loadDashboardData}>Try Again</Button>
@@ -164,27 +129,8 @@ export function AnalyticsDashboard({ periodDays = 30 }: AnalyticsDashboardProps)
     )
   }
 
-  if (!dashboardData) {
-    return null
-  }
-
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Analytics Dashboard</h2>
-          <p className="text-muted-foreground">
-            {formatDate(dashboardData.period.start_date)} - {formatDate(dashboardData.period.end_date)} ({dashboardData.period.days} days)
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={loadDashboardData}>
-            Refresh
-          </Button>
-        </div>
-      </div>
-
       {/* Summary Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
@@ -193,15 +139,11 @@ export function AnalyticsDashboard({ periodDays = 30 }: AnalyticsDashboardProps)
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {formatCurrency(dashboardData.summary.total_spending)}
-            </div>
-            <div className={`flex items-center text-xs ${getTrendColor(dashboardData.trend.direction)}`}>
-              {getTrendIcon(dashboardData.trend.direction)}
-              <span className="ml-1">
-                {dashboardData.trend.change_percentage > 0 ? '+' : ''}
-                {dashboardData.trend.change_percentage.toFixed(1)}% from last period
-              </span>
+            <div className="text-2xl font-bold">{formatCurrency(totalSpending)}</div>
+            <div className={`flex items-center text-xs ${trend.direction === 'up' ? 'text-red-600' : trend.direction === 'down' ? 'text-green-600' : 'text-gray-600'}`}>
+              {trend.direction === 'up' && <TrendingUp className="h-3 w-3 mr-1" />}
+              {trend.direction === 'down' && <TrendingDown className="h-3 w-3 mr-1" />}
+              <span>{trend.pct > 0 ? '+' : ''}{trend.pct}% from last period</span>
             </div>
           </CardContent>
         </Card>
@@ -212,11 +154,11 @@ export function AnalyticsDashboard({ periodDays = 30 }: AnalyticsDashboardProps)
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {dashboardData.summary.transaction_count}
-            </div>
+            <div className="text-2xl font-bold">{filteredExpenses.length}</div>
             <p className="text-xs text-muted-foreground">
-              {formatCurrency(dashboardData.summary.average_transaction)} average
+              {filteredExpenses.length > 0
+                ? `${formatCurrency(totalSpending / filteredExpenses.length)} average`
+                : 'No transactions'}
             </p>
           </CardContent>
         </Card>
@@ -227,138 +169,85 @@ export function AnalyticsDashboard({ periodDays = 30 }: AnalyticsDashboardProps)
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {formatCurrency(dashboardData.summary.daily_average)}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Per day spending
-            </p>
+            <div className="text-2xl font-bold">{formatCurrency(totalSpending / Math.max(periodDays, 1))}</div>
+            <p className="text-xs text-muted-foreground">Per day spending</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Anomalies</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Categories</CardTitle>
+            <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-600">
-              {dashboardData.anomalies.length}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Unusual transactions detected
-            </p>
+            <div className="text-2xl font-bold">{categoryChartData.length}</div>
+            <p className="text-xs text-muted-foreground">Active categories</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Category Breakdown */}
+      {/* Category Charts */}
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle>Top Categories</CardTitle>
-            <CardDescription>
-              Spending breakdown by category
-            </CardDescription>
+            <CardDescription>Spending breakdown by category</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {dashboardData.category_breakdown.slice(0, 5).map((category, index) => (
-              <div key={index} className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="font-medium">{category.category}</span>
-                  <span>{formatCurrency(category.amount)}</span>
-                </div>
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>{category.count} transactions</span>
-                  <span>{category.percentage.toFixed(1)}%</span>
-                </div>
-                <Progress value={category.percentage} className="h-2" />
-              </div>
-            ))}
+          <CardContent>
+            {categoryChartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={categoryChartData.slice(0, 7)}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                  <YAxis tick={{ fontSize: 12 }} />
+                  <Tooltip
+                    formatter={(value: number) => formatCurrency(value)}
+                    contentStyle={{ borderRadius: '8px', border: '1px solid #e5e7eb' }}
+                  />
+                  <Bar dataKey="total_expenses" name="Spending" radius={[4, 4, 0, 0]}>
+                    {categoryChartData.slice(0, 7).map((_entry, index) => (
+                      <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <p className="text-center py-12 text-muted-foreground">No category data yet.</p>
+            )}
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Top Merchants</CardTitle>
-            <CardDescription>
-              Most frequent spending locations
-            </CardDescription>
+            <CardTitle>Category Breakdown</CardTitle>
+            <CardDescription>Percentage of total spending</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {dashboardData.merchant_breakdown.slice(0, 5).map((merchant, index) => (
-              <div key={index} className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium">{merchant.merchant}</p>
-                  <p className="text-xs text-muted-foreground">{merchant.count} transactions</p>
+            {categoryChartData.slice(0, 7).map((category, index) => {
+              const pct = totalSpending > 0 ? (category.total_expenses / totalSpending) * 100 : 0
+              return (
+                <div key={category.name} className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }} />
+                      <span className="font-medium">{category.name}</span>
+                    </div>
+                    <span>{formatCurrency(category.total_expenses)}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>{category.expense_count} transactions</span>
+                    <span>{pct.toFixed(1)}%</span>
+                  </div>
+                  <Progress value={pct} className="h-2" />
                 </div>
-                <div className="text-sm font-medium">
-                  {formatCurrency(merchant.amount)}
-                </div>
-              </div>
-            ))}
+              )
+            })}
+            {categoryChartData.length === 0 && (
+              <p className="text-center py-8 text-muted-foreground">No categories with expenses.</p>
+            )}
           </CardContent>
         </Card>
       </div>
-
-      {/* Anomalies */}
-      {dashboardData.anomalies.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-orange-500" />
-              Spending Anomalies
-            </CardTitle>
-            <CardDescription>
-              Unusual transactions that may need review
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {dashboardData.anomalies.map((anomaly, index) => (
-                <div key={index} className="flex items-start justify-between p-3 bg-orange-50 rounded-lg border">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium">{anomaly.merchant}</span>
-                      {getSeverityBadge(anomaly.severity)}
-                    </div>
-                    <p className="text-xs text-muted-foreground">{anomaly.description}</p>
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                      <span>{formatDate(anomaly.date)}</span>
-                      <span>{anomaly.category}</span>
-                    </div>
-                  </div>
-                  <div className="text-sm font-medium">
-                    {formatCurrency(anomaly.amount)}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Insights */}
-      {dashboardData.insights.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Insights</CardTitle>
-            <CardDescription>
-              AI-generated insights about your spending patterns
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {dashboardData.insights.map((insight, index) => (
-                <div key={index} className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg">
-                  <TrendingUp className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
-                  <p className="text-sm text-blue-900">{insight}</p>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   )
 }
